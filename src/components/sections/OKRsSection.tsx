@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { mockObjectives, sectorLabels } from '@/data/mockData';
 import { OKRCard } from '@/components/dashboard/OKRCard';
+import { NewOKRForm } from '@/components/okr/NewOKRForm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { Search, LayoutGrid, List } from 'lucide-react';
 
 export function OKRsSection() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -62,10 +63,7 @@ export function OKRsSection() {
               <List className="w-4 h-4" />
             </Button>
           </div>
-          <Button className="gap-2 gradient-accent text-accent-foreground border-0">
-            <Plus className="w-4 h-4" />
-            Novo OKR
-          </Button>
+          <NewOKRForm />
         </div>
       </div>
 
