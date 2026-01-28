@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FileDropZone } from '@/components/data/FileDropZone';
+import { DataPreviewTable } from '@/components/data/DataPreviewTable';
+import { useFileParser } from '@/hooks/useFileParser';
 import { toast } from '@/hooks/use-toast';
 import { 
   Upload, 
@@ -23,7 +26,7 @@ import {
   Edit,
   Table as TableIcon,
   Download,
-  FileUp
+  Loader2
 } from 'lucide-react';
 
 interface DataMapping {
@@ -55,7 +58,8 @@ export function DataSourceSection() {
   const [manualSector, setManualSector] = useState('');
   const [manualDate, setManualDate] = useState('');
   const [manualNotes, setManualNotes] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { parseFile, clearResult, parseResult, isLoading: isParsing } = useFileParser();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -106,33 +110,48 @@ export function DataSourceSection() {
     setNewSourceTable('');
   };
 
-  const handleFileUpload = () => {
-    if (!selectedFile) {
-      toast({ title: 'Erro', description: 'Selecione um arquivo para importar.', variant: 'destructive' });
-      return;
-    }
+  const handleFileSelect = async (file: File) => {
+    setSelectedFile(file);
+    setActiveTab('import');
+    await parseFile(file);
+  };
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    clearResult();
+  };
+
+  const handleConfirmImport = () => {
+    if (!selectedFile || !parseResult) return;
     
     const now = new Date();
     const formattedDate = `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`;
-    const records = Math.floor(Math.random() * 200) + 50;
     
     addImportRecord({
       source: selectedFile.name,
       date: formattedDate,
-      records,
+      records: parseResult.data.length,
       status: 'success',
       user: 'Usuário Atual',
     });
     
-    toast({
-      title: 'Importação concluída!',
-      description: `${records} registros importados de "${selectedFile.name}".`,
+    // Also add as a new data source
+    addDataSource({
+      name: selectedFile.name.replace(/\.(csv|xlsx|xls)$/i, ''),
+      type: 'csv',
+      status: 'connected',
+      lastSync: formattedDate,
+      records: parseResult.data.length,
+      tables: [parseResult.columns.slice(0, 3).join(', ')],
     });
     
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    toast({
+      title: 'Importação concluída!',
+      description: `${parseResult.data.length} registros importados de "${selectedFile.name}".`,
+    });
+    
+    handleClearFile();
+    setActiveTab('sources');
   };
 
   const handleManualEntry = () => {
@@ -215,23 +234,6 @@ export function DataSourceSection() {
           </DialogContent>
         </Dialog>
         
-        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-          <Upload className="w-4 h-4 mr-2" />
-          Importar CSV/Excel
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setSelectedFile(file);
-              setActiveTab('import');
-            }
-          }}
-        />
         <Button variant="outline" onClick={handleSyncAll}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar Dados
@@ -379,201 +381,162 @@ export function DataSourceSection() {
 
         {/* Importação */}
         <TabsContent value="import" className="mt-6">
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Upload className="w-5 h-5" />
-                  Upload de Arquivo
-                </CardTitle>
-                <CardDescription>Importe dados via CSV ou Excel</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div 
-                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {selectedFile ? (
-                    <>
-                      <FileUp className="w-12 h-12 mx-auto text-status-success mb-3" />
-                      <p className="text-sm font-medium">{selectedFile.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(selectedFile.size / 1024).toFixed(1)} KB - Pronto para importar
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <FileSpreadsheet className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium">Arraste um arquivo ou clique para selecionar</p>
-                      <p className="text-xs text-muted-foreground mt-1">Suporta CSV, XLS, XLSX (máx. 10MB)</p>
-                    </>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <Label>Tabela de Destino</Label>
-                    <Select>
-                      <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Selecione a tabela..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="faturamento">Faturamento Mensal</SelectItem>
-                        <SelectItem value="custos">Custos Operacionais</SelectItem>
-                        <SelectItem value="metas">Metas por Setor</SelectItem>
-                        <SelectItem value="estoque">Giro de Estoque</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Período de Referência</Label>
-                    <div className="flex gap-2 mt-1.5">
-                      <Select defaultValue="01">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Mês" />
+          <div className="space-y-6">
+            {/* File Drop Zone */}
+            {!parseResult && (
+              <div className="grid lg:grid-cols-2 gap-6">
+                <Card className="card-elevated">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Upload className="w-5 h-5" />
+                      Upload de Arquivo
+                    </CardTitle>
+                    <CardDescription>Arraste e solte ou selecione um arquivo CSV/Excel</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileDropZone
+                      onFileSelect={handleFileSelect}
+                      selectedFile={selectedFile}
+                      onClearFile={handleClearFile}
+                    />
+                    
+                    {isParsing && (
+                      <div className="mt-4 flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Processando arquivo...</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="card-elevated">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TableIcon className="w-5 h-5" />
+                      Entrada Manual de Dados
+                    </CardTitle>
+                    <CardDescription>Adicione valores diretamente</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Métrica *</Label>
+                      <Select value={manualMetric} onValueChange={setManualMetric}>
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue placeholder="Selecione a métrica..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="01">Janeiro</SelectItem>
-                          <SelectItem value="02">Fevereiro</SelectItem>
-                          <SelectItem value="03">Março</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select defaultValue="2026">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Ano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="2026">2026</SelectItem>
-                          <SelectItem value="2025">2025</SelectItem>
+                          <SelectItem value="faturamento">Faturamento Mensal</SelectItem>
+                          <SelectItem value="ebitda">Margem EBITDA</SelectItem>
+                          <SelectItem value="giro">Giro de Estoque</SelectItem>
+                          <SelectItem value="leads">Leads Qualificados</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                </div>
-                <Button 
-                  className="w-full gradient-accent" 
-                  onClick={handleFileUpload}
-                  disabled={!selectedFile}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Importar Dados
-                </Button>
-              </CardContent>
-            </Card>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Valor *</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0.00" 
+                          className="mt-1.5"
+                          value={manualValue}
+                          onChange={(e) => setManualValue(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Unidade</Label>
+                        <Select value={manualUnit} onValueChange={setManualUnit}>
+                          <SelectTrigger className="mt-1.5">
+                            <SelectValue placeholder="Unidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="brl">R$</SelectItem>
+                            <SelectItem value="percent">%</SelectItem>
+                            <SelectItem value="unit">Unidades</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Data de Referência</Label>
+                      <Input 
+                        type="date" 
+                        className="mt-1.5"
+                        value={manualDate}
+                        onChange={(e) => setManualDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Setor *</Label>
+                      <Select value={manualSector} onValueChange={setManualSector}>
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue placeholder="Selecione o setor..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="comercial">Comercial</SelectItem>
+                          <SelectItem value="financeiro">Financeiro</SelectItem>
+                          <SelectItem value="compras">Compras</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="operacoes">Operações</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Observações</Label>
+                      <Input 
+                        placeholder="Notas sobre este registro..." 
+                        className="mt-1.5"
+                        value={manualNotes}
+                        onChange={(e) => setManualNotes(e.target.value)}
+                      />
+                    </div>
+                    <Button className="w-full" onClick={handleManualEntry}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Registro
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
+            {/* Data Preview Table */}
+            {parseResult && parseResult.data.length > 0 && selectedFile && (
+              <DataPreviewTable
+                data={parseResult.data}
+                columns={parseResult.columns}
+                fileName={selectedFile.name}
+                onConfirm={handleConfirmImport}
+                onCancel={handleClearFile}
+                isLoading={isParsing}
+              />
+            )}
+
+            {/* Templates Download */}
             <Card className="card-elevated">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TableIcon className="w-5 h-5" />
-                  Entrada Manual de Dados
-                </CardTitle>
-                <CardDescription>Adicione valores diretamente</CardDescription>
+                <CardTitle className="text-lg">Templates para Importação</CardTitle>
+                <CardDescription>Baixe os modelos padronizados para cada tipo de dado</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Métrica *</Label>
-                  <Select value={manualMetric} onValueChange={setManualMetric}>
-                    <SelectTrigger className="mt-1.5">
-                      <SelectValue placeholder="Selecione a métrica..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="faturamento">Faturamento Mensal</SelectItem>
-                      <SelectItem value="ebitda">Margem EBITDA</SelectItem>
-                      <SelectItem value="giro">Giro de Estoque</SelectItem>
-                      <SelectItem value="leads">Leads Qualificados</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {['Faturamento', 'Custos', 'Metas OKR', 'Estoque'].map((template) => (
+                    <Button 
+                      key={template} 
+                      variant="outline" 
+                      className="justify-start h-auto py-3"
+                      onClick={() => toast({ title: 'Download iniciado', description: `Template ${template} baixado com sucesso.` })}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      <div className="text-left">
+                        <div className="font-medium">{template}</div>
+                        <div className="text-xs text-muted-foreground">template.xlsx</div>
+                      </div>
+                    </Button>
+                  ))}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Valor *</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="mt-1.5"
-                      value={manualValue}
-                      onChange={(e) => setManualValue(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Unidade</Label>
-                    <Select value={manualUnit} onValueChange={setManualUnit}>
-                      <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Unidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="brl">R$</SelectItem>
-                        <SelectItem value="percent">%</SelectItem>
-                        <SelectItem value="unit">Unidades</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Data de Referência</Label>
-                  <Input 
-                    type="date" 
-                    className="mt-1.5"
-                    value={manualDate}
-                    onChange={(e) => setManualDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Setor *</Label>
-                  <Select value={manualSector} onValueChange={setManualSector}>
-                    <SelectTrigger className="mt-1.5">
-                      <SelectValue placeholder="Selecione o setor..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="comercial">Comercial</SelectItem>
-                      <SelectItem value="financeiro">Financeiro</SelectItem>
-                      <SelectItem value="compras">Compras</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="operacoes">Operações</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Observações</Label>
-                  <Input 
-                    placeholder="Notas sobre este registro..." 
-                    className="mt-1.5"
-                    value={manualNotes}
-                    onChange={(e) => setManualNotes(e.target.value)}
-                  />
-                </div>
-                <Button className="w-full" onClick={handleManualEntry}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Registro
-                </Button>
               </CardContent>
             </Card>
           </div>
-
-          {/* Templates Download */}
-          <Card className="card-elevated mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Templates para Importação</CardTitle>
-              <CardDescription>Baixe os modelos padronizados para cada tipo de dado</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {['Faturamento', 'Custos', 'Metas OKR', 'Estoque'].map((template) => (
-                  <Button 
-                    key={template} 
-                    variant="outline" 
-                    className="justify-start h-auto py-3"
-                    onClick={() => toast({ title: 'Download iniciado', description: `Template ${template} baixado com sucesso.` })}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    <div className="text-left">
-                      <div className="font-medium">{template}</div>
-                      <div className="text-xs text-muted-foreground">template.xlsx</div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Histórico */}
