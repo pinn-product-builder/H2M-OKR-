@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Objective } from '@/types/okr';
 import { ProgressBar } from './ProgressBar';
 import { StatusBadge } from './StatusBadge';
@@ -6,6 +7,7 @@ import { ChevronRight, User, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
+import { OKRDetailModal } from '@/components/okr/OKRDetailModal';
 
 interface OKRCardProps {
   objective: Objective;
@@ -46,6 +48,8 @@ function generateWeeklyProgress(currentProgress: number, status: string) {
 }
 
 export function OKRCard({ objective, index }: OKRCardProps) {
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  
   const weeklyData = useMemo(() => 
     generateWeeklyProgress(objective.progress, objective.status), 
     [objective.progress, objective.status]
@@ -60,10 +64,17 @@ export function OKRCard({ objective, index }: OKRCardProps) {
     }
   }, [objective.status]);
 
+  const totalSubKRs = objective.keyResults.reduce(
+    (acc, kr) => acc + (kr.children?.length || 0),
+    0
+  );
+
   return (
+    <>
     <div 
       className="card-elevated p-5 animate-slide-up cursor-pointer group"
       style={{ animationDelay: `${index * 50}ms` }}
+      onClick={() => setIsDetailOpen(true)}
     >
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
@@ -151,9 +162,17 @@ export function OKRCard({ objective, index }: OKRCardProps) {
         {objective.keyResults.length > 2 && (
           <p className="text-xs text-muted-foreground">
             +{objective.keyResults.length - 2} mais
+            {totalSubKRs > 0 && ` (${totalSubKRs} Sub-KRs)`}
           </p>
         )}
       </div>
     </div>
+    
+    <OKRDetailModal 
+      objective={objective} 
+      open={isDetailOpen} 
+      onOpenChange={setIsDetailOpen} 
+    />
+    </>
   );
 }

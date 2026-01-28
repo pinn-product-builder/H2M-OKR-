@@ -22,6 +22,8 @@ export interface KeyResult {
   progress: number;
   status: OKRStatus;
   lastUpdate: string;
+  parentId?: string; // ID do KR pai (se for sub-KR)
+  children?: KeyResult[]; // Sub-KRs aninhados
 }
 
 export interface Objective {
