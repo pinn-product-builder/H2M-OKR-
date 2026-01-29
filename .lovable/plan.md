@@ -1,345 +1,284 @@
 
-# Plano: Data Hub Avançado com Upload, Mapeamento e Logs
+# Plano: Sistema de Permissoes com Grupos, Melhorias Data Hub, UI do Tema e Cards Dashboard
 
 ## Resumo
-Criar um sistema completo de gerenciamento de dados (Data Hub) com upload de arquivos CSV/XLSX, validação robusta, visualização prévia, mapeamento inteligente de campos, logs detalhados de importação, tratamento de erros amigável e controle de acesso baseado em roles.
+
+Implementar sistema de gestao de usuarios com grupos e permissoes RLS para Supabase, restringir Data Source apenas para admin/usuarios com permissao, melhorar tela de Data Source com mapeamento via tabela na criacao, mover seletor de tema para o Header (ao lado do usuario), remover aba Aparencia de Configuracoes, e atualizar os cards do Dashboard para exibir metricas de OKRs e Atividades.
 
 ---
 
-## O que será implementado
+## O que sera implementado
 
-### 1. Upload de Arquivos com Validação Avançada
-- Suporte a CSV e XLSX com validação de estrutura
-- Limite de tamanho configurável (padrão 10MB)
-- Validação de colunas obrigatórias
-- Detecção automática de encoding (UTF-8, ISO-8859-1)
-- Detecção de separador CSV (vírgula, ponto-e-vírgula, tab)
-- Feedback visual durante upload
+### 1. Sistema de Gestao de Usuarios com Grupos e Permissoes
 
-### 2. Visualização Prévia Aprimorada
-- Tabela paginada com preview dos dados
-- Detecção automática de tipos de dados (texto, número, moeda, data)
-- Indicadores visuais de tipos por coluna
-- Estatísticas do arquivo (linhas, colunas, valores nulos)
-- Validação de dados com alertas visuais
+**Estrutura no Supabase (RLS):**
+- Criar enum `app_role` com valores: admin, gestor, analista, visualizador
+- Criar tabela `user_roles` vinculada a auth.users
+- Criar funcao security definer `has_role` para verificar roles sem recursao
+- Implementar RLS policies baseadas em roles
 
-### 3. Mapeamento de Campos
-- Interface drag-and-drop para associar colunas
-- Sugestão automática baseada em nomes de colunas
-- Validação de tipos compatíveis
-- Transformações disponíveis (SUM, AVG, COUNT, etc.)
-- Preview do resultado do mapeamento
+**Interface de Gestao (UsuariosSection):**
+- Quadro visual de grupos de permissoes
+- Atribuicao de usuarios a grupos
+- Visualizacao de permissoes por grupo
+- CRUD de usuarios com selecao de role
 
-### 4. Logs Detalhados de Importação
-- Histórico completo de operações
-- Detalhes por importação (registros processados, ignorados, erros)
-- Filtros por data, status, usuário
-- Exportação de logs
-- Timeline visual de operações
+### 2. Restricao de Acesso ao Data Source
 
-### 5. Tratamento de Erros e Feedback
-- Mensagens de erro claras e acionáveis
-- Validação em tempo real
-- Rollback em caso de falha
-- Notificações toast para operações
-- Estados de loading amigáveis
+- Modificar `checkDataHubAccess` para negar acesso a usuarios sem role adequada
+- Apenas `admin` e usuarios com permissao `canView` podem acessar
+- Visualizador nao pode importar nem gerenciar mapeamentos
+- Tela de acesso negado para usuarios sem permissao
 
-### 6. Controle de Acesso por Role
-- Verificação de permissões no acesso à seção Data Hub
-- Roles: Admin (acesso total), Analista (importação), Visualizador (somente leitura)
-- Feedback visual para usuários sem permissão
-- Auditoria de ações por usuário
+### 3. Melhorias no Data Hub - Mapeamento via Tabela
+
+**Na tela de Nova Planilha:**
+- Adicionar interface de mapeamento ja na criacao
+- Tabela para definir colunas de origem e campos de destino
+- Pre-configurar transformacoes (SUM, AVG, COUNT, etc.)
+- Validacao de campos obrigatorios
+
+### 4. Seletor de Tema no Header
+
+**Mover tema para Header:**
+- Adicionar Select/Toggle de tema ao lado do usuario logado
+- Opcoes: Claro e Escuro (remover Sistema por simplicidade)
+- Criar contexto de tema para persistir preferencia
+
+**Remover de Configuracoes:**
+- Eliminar aba "Aparencia" do ConfiguracoesSection
+- Remover opcoes de cor de destaque, animacoes e modo compacto
+
+### 5. Atualizar Cards do Dashboard
+
+**Novos cards:**
+1. **OKRs no Prazo** - Quantidade de OKRs com status 'on-track'
+2. **OKRs em Atraso** - Quantidade de OKRs com status 'attention' ou 'critical'
+3. **Atividades no Prazo** - Tarefas completas ou em andamento dentro do prazo
+4. **Atividades em Atraso** - Tarefas pendentes com prazo expirado
 
 ---
 
 ## Arquivos a serem modificados/criados
 
-| Arquivo | Ação | Descrição |
+| Arquivo | Acao | Descricao |
 |---------|------|-----------|
-| `src/types/dataHub.ts` | Criar | Tipos para importação, logs e mapeamento |
-| `src/hooks/useDataImport.ts` | Criar | Hook para gerenciar importação com validação |
-| `src/hooks/useImportLogs.ts` | Criar | Hook para gerenciar logs de importação |
-| `src/components/data/AdvancedFileUpload.tsx` | Criar | Upload com validação e progresso |
-| `src/components/data/DataPreviewEnhanced.tsx` | Criar | Preview com estatísticas e validação |
-| `src/components/data/ColumnMapper.tsx` | Criar | Interface de mapeamento de campos |
-| `src/components/data/ImportLogViewer.tsx` | Criar | Visualização detalhada de logs |
-| `src/components/data/ImportWizard.tsx` | Criar | Wizard de importação passo-a-passo |
-| `src/components/sections/DataSourceSection.tsx` | Modificar | Integrar novos componentes e validação de role |
-| `src/contexts/AppContext.tsx` | Modificar | Adicionar logs detalhados e validação |
+| `src/types/user.ts` | Criar | Tipos para roles, grupos e permissoes |
+| `src/contexts/ThemeContext.tsx` | Criar | Contexto de tema com persistencia |
+| `src/components/layout/Header.tsx` | Modificar | Adicionar seletor de tema |
+| `src/components/sections/UsuariosSection.tsx` | Modificar | Quadro de grupos e gestao de permissoes |
+| `src/components/sections/ConfiguracoesSection.tsx` | Modificar | Remover aba Aparencia |
+| `src/components/sections/DataSourceSection.tsx` | Modificar | Mapeamento na criacao |
+| `src/components/data/NewSourceWithMapping.tsx` | Criar | Dialog de nova fonte com mapeamento |
+| `src/lib/dataHubPermissions.ts` | Modificar | Refinar permissoes |
+| `src/data/mockData.ts` | Modificar | Novos cards de metricas |
+| `src/components/dashboard/Dashboard.tsx` | Modificar | Usar metricas dinamicas |
+| `src/App.tsx` | Modificar | Adicionar ThemeProvider |
+| `.lovable/supabase_migrations/` | Criar | Migrations para user_roles e RLS |
 
 ---
 
-## Detalhes Técnicos
+## Detalhes Tecnicos
 
-### Novos Tipos (dataHub.ts)
+### Novos Tipos (user.ts)
 ```text
-ImportLog {
+AppRole = 'admin' | 'gestor' | 'analista' | 'visualizador'
+
+UserRole {
   id: string
-  sourceFile: string
-  importType: 'csv' | 'xlsx' | 'manual'
-  status: 'pending' | 'processing' | 'success' | 'partial' | 'error'
-  startedAt: string
-  completedAt?: string
   userId: string
-  userName: string
-  totalRows: number
-  processedRows: number
-  skippedRows: number
-  errorRows: number
-  errors: ImportError[]
-  mapping?: FieldMapping
-  targetTable: string
+  role: AppRole
 }
 
-ImportError {
-  row: number
-  column?: string
-  message: string
-  severity: 'warning' | 'error'
-  value?: string
-}
-
-FieldMapping {
-  sourceColumn: string
-  targetField: string
-  transformation?: 'none' | 'sum' | 'avg' | 'count' | 'date_format'
-  isRequired: boolean
-}
-
-ValidationResult {
-  isValid: boolean
-  errors: ValidationError[]
-  warnings: ValidationWarning[]
-  statistics: DataStatistics
-}
-
-DataStatistics {
-  totalRows: number
-  totalColumns: number
-  nullValues: number
-  uniqueValues: Record<string, number>
-  columnTypes: Record<string, 'text' | 'number' | 'date' | 'currency'>
-}
-```
-
-### Hook useDataImport
-```text
-useDataImport {
-  // Estado
-  file: File | null
-  parseResult: ParseResult | null
-  validation: ValidationResult | null
-  mapping: FieldMapping[]
-  isLoading: boolean
-  step: 'upload' | 'preview' | 'mapping' | 'confirm' | 'complete'
-  
-  // Ações
-  uploadFile(file: File): Promise<void>
-  validateData(): ValidationResult
-  setMapping(mapping: FieldMapping[]): void
-  confirmImport(): Promise<ImportLog>
-  reset(): void
-  
-  // Utilitários
-  detectColumnTypes(): Record<string, string>
-  suggestMappings(): FieldMapping[]
-  previewTransformation(mapping: FieldMapping): DataRow[]
-}
-```
-
-### Interface ImportWizard
-```text
-Passo 1 - Upload:
-┌────────────────────────────────────────────────────────┐
-│ ┌──────────────────────────────────────────────────┐   │
-│ │                                                  │   │
-│ │     📄 Arraste um arquivo CSV ou Excel aqui     │   │
-│ │            ou clique para selecionar            │   │
-│ │                                                  │   │
-│ │         Formatos: .csv, .xlsx (max 10MB)        │   │
-│ └──────────────────────────────────────────────────┘   │
-│                                                        │
-│ Validações aplicadas:                                  │
-│ ✓ Estrutura do arquivo                                │
-│ ✓ Encoding (UTF-8 ou ISO-8859-1)                      │
-│ ✓ Limite de tamanho                                   │
-└────────────────────────────────────────────────────────┘
-
-Passo 2 - Preview:
-┌────────────────────────────────────────────────────────┐
-│ Estatísticas do Arquivo                                │
-│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
-│ │ 1.250    │ │ 8        │ │ 12       │ │ 2        │   │
-│ │ Linhas   │ │ Colunas  │ │ Nulos    │ │ Avisos   │   │
-│ └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
-│                                                        │
-│ Preview dos Dados (primeiras 20 linhas)                │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ # │ Mês     │ Valor   │ Meta    │ Região │ Status │ │
-│ │ 1 │ Jan/26  │ R$245K  │ R$250K  │ Sul    │ Ativo  │ │
-│ │ 2 │ Jan/26  │ R$380K  │ R$350K  │ Sudeste│ Ativo  │ │
-│ │...│ ...     │ ...     │ ...     │ ...    │ ...    │ │
-│ └────────────────────────────────────────────────────┘ │
-│                                                        │
-│ ⚠ 2 avisos encontrados                  [Ver Detalhes]│
-└────────────────────────────────────────────────────────┘
-
-Passo 3 - Mapeamento:
-┌────────────────────────────────────────────────────────┐
-│ Mapeamento de Campos                    [Auto-Mapear]  │
-│                                                        │
-│ Coluna do Arquivo    →    Campo do Sistema             │
-│ ┌────────────────┐       ┌────────────────┐            │
-│ │ Valor          │   →   │ Faturamento    │   [SUM]    │
-│ └────────────────┘       └────────────────┘            │
-│ ┌────────────────┐       ┌────────────────┐            │
-│ │ Meta           │   →   │ Meta Vendas    │   [AVG]    │
-│ └────────────────┘       └────────────────┘            │
-│ ┌────────────────┐       ┌────────────────┐            │
-│ │ Região         │   →   │ Centro Custo   │   [NONE]   │
-│ └────────────────┘       └────────────────┘            │
-│                                                        │
-│ Campos obrigatórios:                                   │
-│ ✓ Valor  ✓ Meta  ✗ Data (não mapeado)                 │
-└────────────────────────────────────────────────────────┘
-
-Passo 4 - Confirmação:
-┌────────────────────────────────────────────────────────┐
-│ Resumo da Importação                                   │
-│                                                        │
-│ Arquivo: vendas_jan_2026.xlsx                          │
-│ Tabela destino: Faturamento Mensal                     │
-│ Registros a importar: 1.248                            │
-│ Campos mapeados: 6 de 8                                │
-│                                                        │
-│ ┌──────────────────────────────────────────────────┐   │
-│ │ ⚠ Esta ação irá substituir dados existentes     │   │
-│ │   do período Janeiro 2026.                       │   │
-│ └──────────────────────────────────────────────────┘   │
-│                                                        │
-│                    [Cancelar]  [Confirmar Importação]  │
-└────────────────────────────────────────────────────────┘
-```
-
-### Componente ImportLogViewer
-```text
-┌────────────────────────────────────────────────────────┐
-│ Logs de Importação                                     │
-├────────────────────────────────────────────────────────┤
-│ Filtros: [Todos ▼] [Últimos 7 dias ▼] [Buscar...]     │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│ ● 29/01/2026 10:30 - vendas_jan.xlsx                  │
-│   ✓ Sucesso | 1.250 registros | Carlos Silva          │
-│   └─ [Expandir detalhes]                              │
-│                                                        │
-│ ● 28/01/2026 14:15 - custos_operacionais.csv          │
-│   ⚠ Parcial | 890 de 920 registros | Ana Costa        │
-│   └─ 30 linhas ignoradas (dados inválidos)            │
-│      └─ Linha 45: Campo "valor" vazio                 │
-│      └─ Linha 67: Data inválida "31/02/2026"          │
-│      └─ [Ver todos os erros]                          │
-│                                                        │
-│ ● 27/01/2026 09:00 - estoque.xlsx                     │
-│   ✗ Erro | 0 registros | Pedro Santos                 │
-│   └─ Arquivo corrompido ou formato inválido           │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
-
-### Validação de Roles
-```text
-Função checkDataHubAccess(userRole):
-  switch(userRole):
-    case 'admin':
-      return { canView: true, canImport: true, canDelete: true, canExport: true }
-    case 'gestor':
-      return { canView: true, canImport: true, canDelete: false, canExport: true }
-    case 'analista':
-      return { canView: true, canImport: true, canDelete: false, canExport: true }
-    case 'visualizador':
-      return { canView: true, canImport: false, canDelete: false, canExport: false }
-    default:
-      return { canView: false, canImport: false, canDelete: false, canExport: false }
-
-Na seção DataSourceSection:
-  const { user } = useAuth()
-  const permissions = checkDataHubAccess(user?.role)
-  
-  if (!permissions.canView) {
-    return <AccessDeniedMessage />
+RolePermissions {
+  role: AppRole
+  label: string
+  description: string
+  permissions: {
+    canManageUsers: boolean
+    canAccessDataHub: boolean
+    canImportData: boolean
+    canManageOKRs: boolean
+    canEditOKRs: boolean
+    canViewDashboard: boolean
+    canManageSettings: boolean
   }
-  
-  // Desabilitar botões baseado em permissões
-  <Button disabled={!permissions.canImport}>Nova Importação</Button>
+}
 ```
 
-### Validações de Arquivo
+### ThemeContext
 ```text
-validateFile(file):
-  errors = []
-  
-  // Validar extensão
-  extension = file.name.split('.').pop().toLowerCase()
-  if (!['csv', 'xlsx', 'xls'].includes(extension)):
-    errors.push({ type: 'extension', message: 'Formato não suportado' })
-  
-  // Validar tamanho
-  if (file.size > MAX_SIZE_MB * 1024 * 1024):
-    errors.push({ type: 'size', message: 'Arquivo excede limite de XMB' })
-  
-  // Validar estrutura (após parse)
-  if (columns.length === 0):
-    errors.push({ type: 'structure', message: 'Nenhuma coluna detectada' })
-  
-  if (data.length === 0):
-    errors.push({ type: 'empty', message: 'Arquivo vazio' })
-  
-  return { isValid: errors.length === 0, errors }
+ThemeContext {
+  theme: 'light' | 'dark'
+  setTheme: (theme) => void
+}
 
-validateData(data, mapping):
-  warnings = []
-  errors = []
-  
-  for each row in data:
-    // Verificar campos obrigatórios
-    for each requiredField in mapping.filter(m => m.isRequired):
-      if (row[requiredField.sourceColumn] === null || empty):
-        errors.push({ row: index, column: requiredField, message: 'Campo obrigatório vazio' })
-    
-    // Validar tipos
-    for each field in mapping:
-      value = row[field.sourceColumn]
-      if (field.expectedType === 'number' && !isNumeric(value)):
-        warnings.push({ row: index, column: field, message: 'Valor não numérico' })
-      if (field.expectedType === 'date' && !isValidDate(value)):
-        warnings.push({ row: index, column: field, message: 'Data inválida' })
-  
-  return { errors, warnings }
+// Persistir em localStorage
+// Aplicar classe no document.documentElement
+```
+
+### Migracao Supabase - user_roles
+```sql
+-- Criar enum para roles
+create type public.app_role as enum ('admin', 'gestor', 'analista', 'visualizador');
+
+-- Criar tabela user_roles
+create table public.user_roles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  role app_role not null,
+  created_at timestamp with time zone default now(),
+  unique (user_id, role)
+);
+
+-- Habilitar RLS
+alter table public.user_roles enable row level security;
+
+-- Funcao security definer para verificar role
+create or replace function public.has_role(_user_id uuid, _role app_role)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.user_roles
+    where user_id = _user_id
+      and role = _role
+  )
+$$;
+
+-- Policy: Admins podem ver todos os roles
+create policy "Admins can view all roles"
+on public.user_roles
+for select
+to authenticated
+using (public.has_role(auth.uid(), 'admin'));
+
+-- Policy: Usuarios podem ver seu proprio role
+create policy "Users can view own role"
+on public.user_roles
+for select
+to authenticated
+using (user_id = auth.uid());
+```
+
+### Quadro de Gestao de Grupos (UsuariosSection)
+```text
+┌────────────────────────────────────────────────────────┐
+│ Gestao de Usuarios e Grupos                            │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────┐│
+│ │ ADMIN       │ │ GESTOR      │ │ ANALISTA    │ │ VIS ││
+│ │             │ │             │ │             │ │     ││
+│ │ ● Carlos    │ │ ● Roberto   │ │ ● Ana       │ │ ● M ││
+│ │             │ │ ● Fernanda  │ │ ● Pedro     │ │     ││
+│ │             │ │ ● Bruno     │ │ ● Maria     │ │     ││
+│ │             │ │ ● Andre     │ │             │ │     ││
+│ │             │ │             │ │             │ │     ││
+│ │ [1 usuario] │ │ [4 usuarios]│ │ [3 usuarios]│ │ [1] ││
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────┘│
+│                                                        │
+│ Arrastar usuarios entre grupos para alterar role       │
+└────────────────────────────────────────────────────────┘
+```
+
+### Cards do Dashboard - Novas Metricas
+```text
+Card 1: OKRs no Prazo
+  - Contagem de objectives com status === 'on-track'
+  - Icone: Target (verde)
+  - Variante: success
+
+Card 2: OKRs em Atraso
+  - Contagem de objectives com status === 'attention' ou 'critical'
+  - Icone: AlertTriangle (vermelho)
+  - Variante: warning/critical
+
+Card 3: Atividades no Prazo
+  - Tarefas com status !== 'completed' E sem dueDate expirado
+  - Icone: CheckCircle
+  - Variante: success
+
+Card 4: Atividades em Atraso
+  - Tarefas pendentes com dueDate < hoje
+  - Icone: Clock (vermelho)
+  - Variante: critical
+```
+
+### Seletor de Tema no Header
+```text
+Antes do avatar do usuario:
+
+┌────────────────────────────────────┐
+│ [🔔] [☀️/🌙 ▼] [👤 Carlos ▼]     │
+└────────────────────────────────────┘
+
+Select simples:
+  - ☀️ Claro
+  - 🌙 Escuro
+```
+
+### Nova Fonte com Mapeamento (NewSourceWithMapping)
+```text
+┌────────────────────────────────────────────────────────┐
+│ Nova Fonte de Dados                                    │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│ Nome da Fonte: [________________]                      │
+│ Tabela Destino: [Faturamento Mensal ▼]                │
+│                                                        │
+│ ─────────────────────────────────────                  │
+│ Mapeamento de Colunas (opcional)                       │
+│ ─────────────────────────────────────                  │
+│                                                        │
+│ │ Coluna Arquivo  │ Campo Sistema │ Transformacao │   │
+│ │─────────────────│───────────────│───────────────│   │
+│ │ [valor_total   ]│ [Valor      ▼]│ [SUM        ▼]│   │
+│ │ [data_venda    ]│ [Data       ▼]│ [NONE       ▼]│   │
+│ │ [setor         ]│ [Setor      ▼]│ [NONE       ▼]│   │
+│ │                 │ [+ Adicionar ]│               │   │
+│                                                        │
+│ [Cancelar]                    [Criar Fonte]           │
+└────────────────────────────────────────────────────────┘
+```
+
+### ConfiguracoesSection Atualizado
+```text
+Tabs atualizadas (removendo Aparencia):
+
+Admin:    [Geral] [Integracao] [Notificacoes] [Seguranca] [Setores]
+Non-Admin: [Geral] [Integracao] [Notificacoes] [Seguranca]
 ```
 
 ---
 
-## Fluxo de Implementação
+## Fluxo de Implementacao
 
-1. **Criar tipos** (dataHub.ts): Definir interfaces para logs, mapeamento e validação
-2. **Criar hooks** (useDataImport.ts, useImportLogs.ts): Lógica de importação e logs
-3. **Criar AdvancedFileUpload**: Upload com validação e feedback visual
-4. **Criar DataPreviewEnhanced**: Preview com estatísticas e alertas
-5. **Criar ColumnMapper**: Interface de mapeamento drag-and-drop
-6. **Criar ImportLogViewer**: Visualização detalhada de histórico
-7. **Criar ImportWizard**: Combinar componentes em wizard passo-a-passo
-8. **Atualizar DataSourceSection**: Integrar wizard e validação de roles
-9. **Atualizar AppContext**: Adicionar estado de logs detalhados
+1. **Criar tipos** (user.ts): Roles, permissoes e grupos
+2. **Criar ThemeContext**: Contexto de tema com persistencia
+3. **Atualizar App.tsx**: Adicionar ThemeProvider
+4. **Modificar Header**: Adicionar seletor de tema
+5. **Atualizar ConfiguracoesSection**: Remover aba Aparencia
+6. **Atualizar UsuariosSection**: Quadro de gestao de grupos
+7. **Modificar mockData**: Novos cards de metricas
+8. **Atualizar Dashboard**: Usar metricas dinamicas de OKRs/Tarefas
+9. **Criar NewSourceWithMapping**: Dialog com mapeamento integrado
+10. **Atualizar DataSourceSection**: Integrar novo dialog
+11. **Refinar dataHubPermissions**: Restricoes de acesso
+12. **Criar migration SQL**: Estrutura para Supabase (user_roles)
 
 ---
 
 ## Resultado Esperado
 
-- Upload intuitivo com validação em tempo real e feedback visual
-- Preview rico com estatísticas, tipos detectados e alertas de problemas
-- Mapeamento flexível com sugestões automáticas e transformações
-- Logs completos com detalhes de erros e histórico de operações
-- Tratamento de erros amigável com mensagens claras e acionáveis
-- Controle de acesso por role impedindo ações não autorizadas
-- Experiência consistente seguindo o design system existente
+- Sistema de grupos de usuarios com visualizacao clara de permissoes
+- Data Source acessivel apenas para admin e usuarios autorizados
+- Mapeamento de campos disponivel ja na criacao de fontes
+- Tema claro/escuro selecionavel no Header (simples e acessivel)
+- Aba Aparencia removida de Configuracoes
+- Dashboard mostrando metricas de OKRs no Prazo, em Atraso, Atividades no Prazo e em Atraso
+- Estrutura preparada para integracao com Supabase RLS
