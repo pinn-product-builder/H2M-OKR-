@@ -144,3 +144,14 @@ export const SYSTEM_FIELDS: SystemField[] = [
   { id: 'status', name: 'status', label: 'Status', type: 'text', isRequired: false, category: 'Geral' },
   { id: 'descricao', name: 'descricao', label: 'Descrição', type: 'text', isRequired: false, category: 'Geral' },
 ];
+
+// Transformation types for mapping
+export const TRANSFORMATION_TYPES = [
+  { value: 'none', label: 'Nenhuma' },
+  { value: 'sum', label: 'SUM' },
+  { value: 'avg', label: 'AVG' },
+  { value: 'count', label: 'COUNT' },
+  { value: 'min', label: 'MIN' },
+  { value: 'max', label: 'MAX' },
+  { value: 'date_format', label: 'Formato de Data' },
+] as const;

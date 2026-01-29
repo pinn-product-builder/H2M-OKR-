@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ImportWizard } from '@/components/data/ImportWizard';
 import { ImportLogViewer } from '@/components/data/ImportLogViewer';
+import { NewSourceWithMapping } from '@/components/data/NewSourceWithMapping';
 import { toast } from '@/hooks/use-toast';
 import { 
   Upload, 
@@ -107,27 +108,23 @@ export function DataSourceSection() {
     }
   };
 
-  const handleAddSource = () => {
-    if (!newSourceName || !newSourceTable) {
-      toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
-      return;
-    }
-    
+  const handleAddSource = (data: { name: string; targetTable: string; mappings: { id: string; sourceColumn: string; targetField: string; transformation: string }[] }) => {
     const now = new Date();
     const formattedDate = `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`;
     
     addDataSource({
-      name: newSourceName,
+      name: data.name,
       type: 'csv',
       status: 'connected',
       lastSync: formattedDate,
       records: 0,
-      tables: [newSourceTable],
+      tables: [data.targetTable],
     });
     
-    setNewSourceOpen(false);
-    setNewSourceName('');
-    setNewSourceTable('');
+    toast({
+      title: 'Fonte adicionada!',
+      description: `${data.name} foi configurada com ${data.mappings.length} mapeamento(s).`,
+    });
   };
 
   const handleManualEntry = () => {
@@ -169,50 +166,23 @@ export function DataSourceSection() {
           Importar Dados
         </Button>
         
-        <Dialog open={newSourceOpen} onOpenChange={setNewSourceOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" disabled={!permissions.canImport}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Fonte
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Adicionar Nova Fonte de Dados</DialogTitle>
-              <DialogDescription>Configure uma nova planilha para importação</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label>Nome da Fonte *</Label>
-                <Input 
-                  value={newSourceName}
-                  onChange={(e) => setNewSourceName(e.target.value)}
-                  placeholder="Ex: Planilha Vendas Q1"
-                  className="mt-1.5"
-                />
-              </div>
-              <div>
-                <Label>Tabela de Destino *</Label>
-                <Input 
-                  value={newSourceTable}
-                  onChange={(e) => setNewSourceTable(e.target.value)}
-                  placeholder="Ex: Vendas Mensais"
-                  className="mt-1.5"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setNewSourceOpen(false)}>Cancelar</Button>
-                <Button onClick={handleAddSource} className="gradient-accent">Adicionar</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button variant="outline" onClick={() => setNewSourceOpen(true)} disabled={!permissions.canImport}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Fonte
+        </Button>
         
         <Button variant="outline" onClick={handleSyncAll}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar Dados
         </Button>
       </div>
+
+      {/* New Source With Mapping Dialog */}
+      <NewSourceWithMapping
+        open={newSourceOpen}
+        onOpenChange={setNewSourceOpen}
+        onSubmit={handleAddSource}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-card border">

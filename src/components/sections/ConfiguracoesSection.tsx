@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Database, Bell, Shield, Palette, CheckCircle2 } from 'lucide-react';
+import { Building2, Database, Bell, Shield, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SectorManager } from '@/components/settings/SectorManager';
 
@@ -17,12 +17,11 @@ export function ConfiguracoesSection() {
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl">
       <Tabs defaultValue="geral" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="integracao">Integração</TabsTrigger>
           <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
           <TabsTrigger value="seguranca">Segurança</TabsTrigger>
-          <TabsTrigger value="aparencia">Aparência</TabsTrigger>
           {isAdmin && <TabsTrigger value="setores">Setores</TabsTrigger>}
         </TabsList>
 
@@ -251,62 +250,6 @@ export function ConfiguracoesSection() {
                     <SelectItem value="2anos">2 anos</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="aparencia" className="mt-6 space-y-6">
-          <Card className="card-elevated">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Palette className="w-5 h-5" />
-                Personalização Visual
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Tema</Label>
-                <div className="flex gap-3">
-                  {['Claro', 'Escuro', 'Sistema'].map((tema) => (
-                    <Button 
-                      key={tema} 
-                      variant={tema === 'Claro' ? 'default' : 'outline'}
-                      className={tema === 'Claro' ? 'gradient-accent text-accent-foreground border-0' : ''}
-                    >
-                      {tema}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Cor de Destaque</Label>
-                <div className="flex gap-2">
-                  {['hsl(174, 60%, 40%)', 'hsl(220, 70%, 50%)', 'hsl(280, 60%, 50%)', 'hsl(340, 70%, 50%)'].map((cor, i) => (
-                    <button 
-                      key={i}
-                      className={`w-8 h-8 rounded-full border-2 ${i === 0 ? 'border-foreground' : 'border-transparent'}`}
-                      style={{ backgroundColor: cor }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Animações</p>
-                  <p className="text-sm text-muted-foreground">Ativar animações e transições</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Modo compacto</p>
-                  <p className="text-sm text-muted-foreground">Reduzir espaçamentos para mais informações na tela</p>
-                </div>
-                <Switch />
               </div>
             </CardContent>
           </Card>

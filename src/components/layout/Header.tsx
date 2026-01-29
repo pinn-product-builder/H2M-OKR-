@@ -1,7 +1,8 @@
-import { Bell, Search, User, LogOut } from 'lucide-react';
+import { Bell, Search, User, LogOut, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface HeaderProps {
   title: string;
@@ -18,6 +26,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="h-16 border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-6">
@@ -41,6 +50,41 @@ export function Header({ title, subtitle }: HeaderProps) {
           <Bell className="w-5 h-5" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-critical rounded-full" />
         </Button>
+
+        {/* Theme Selector */}
+        <Select value={theme} onValueChange={(value: 'light' | 'dark') => setTheme(value)}>
+          <SelectTrigger className="w-[110px] h-9">
+            <SelectValue>
+              <div className="flex items-center gap-2">
+                {theme === 'light' ? (
+                  <>
+                    <Sun className="w-4 h-4" />
+                    <span>Claro</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4" />
+                    <span>Escuro</span>
+                  </>
+                )}
+              </div>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="light">
+              <div className="flex items-center gap-2">
+                <Sun className="w-4 h-4" />
+                <span>Claro</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="dark">
+              <div className="flex items-center gap-2">
+                <Moon className="w-4 h-4" />
+                <span>Escuro</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* User Menu */}
         <DropdownMenu>
