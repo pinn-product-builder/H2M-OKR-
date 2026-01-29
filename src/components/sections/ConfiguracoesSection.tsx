@@ -6,18 +6,24 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Database, Bell, Shield, Palette, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Building2, Database, Bell, Shield, Palette, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { SectorManager } from '@/components/settings/SectorManager';
 
 export function ConfiguracoesSection() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl">
       <Tabs defaultValue="geral" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="integracao">Integração</TabsTrigger>
           <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
           <TabsTrigger value="seguranca">Segurança</TabsTrigger>
           <TabsTrigger value="aparencia">Aparência</TabsTrigger>
+          {isAdmin && <TabsTrigger value="setores">Setores</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="geral" className="mt-6 space-y-6">
@@ -305,6 +311,12 @@ export function ConfiguracoesSection() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="setores" className="mt-6 space-y-6">
+            <SectorManager />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

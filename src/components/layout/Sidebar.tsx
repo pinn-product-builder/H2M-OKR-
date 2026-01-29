@@ -7,13 +7,8 @@ import {
   Building2, 
   Settings, 
   Users,
-  TrendingUp,
-  Package,
-  Megaphone,
-  Briefcase,
   ChevronLeft,
   ChevronRight,
-  Boxes,
   Database
 } from 'lucide-react';
 
@@ -27,14 +22,6 @@ const mainNavItems = [
   { id: 'okrs', label: 'OKRs', icon: Target },
   { id: 'indicadores', label: 'Indicadores', icon: BarChart3 },
   { id: 'datasource', label: 'Data Source', icon: Database },
-];
-
-const sectorItems = [
-  { id: 'comercial', label: 'Comercial', icon: TrendingUp },
-  { id: 'financeiro', label: 'Financeiro', icon: Briefcase },
-  { id: 'compras', label: 'Compras', icon: Package },
-  { id: 'marketing', label: 'Marketing', icon: Megaphone },
-  { id: 'operacoes', label: 'Operações', icon: Boxes },
 ];
 
 const systemItems = [
@@ -72,28 +59,6 @@ export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {
           {!collapsed && <p className="section-title px-3 text-sidebar-foreground/50">Principal</p>}
           <ul className="space-y-1">
             {mainNavItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => onSectionChange(item.id)}
-                  className={cn(
-                    "sidebar-item w-full",
-                    currentSection === item.id && "sidebar-item-active"
-                  )}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Sectors */}
-        <div className="mb-6">
-          {!collapsed && <p className="section-title px-3 text-sidebar-foreground/50">Setores</p>}
-          <ul className="space-y-1">
-            {sectorItems.map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => onSectionChange(item.id)}

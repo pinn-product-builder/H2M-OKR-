@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Objective } from '@/types/okr';
 import { ProgressBar } from './ProgressBar';
 import { StatusBadge } from './StatusBadge';
-import { sectorLabels } from '@/data/mockData';
+import { useApp } from '@/contexts/AppContext';
 import { ChevronRight, User, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
@@ -49,6 +49,7 @@ function generateWeeklyProgress(currentProgress: number, status: string) {
 
 export function OKRCard({ objective, index }: OKRCardProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const { sectors, tasks } = useApp();
   
   const weeklyData = useMemo(() => 
     generateWeeklyProgress(objective.progress, objective.status), 
@@ -64,10 +65,8 @@ export function OKRCard({ objective, index }: OKRCardProps) {
     }
   }, [objective.status]);
 
-  const totalSubKRs = objective.keyResults.reduce(
-    (acc, kr) => acc + (kr.children?.length || 0),
-    0
-  );
+  const totalTasks = tasks.filter(t => t.parentOKRId === objective.id).length;
+  const sectorLabel = sectors.find(s => s.slug === objective.sector)?.name || objective.sector;
 
   return (
     <>
@@ -80,7 +79,7 @@ export function OKRCard({ objective, index }: OKRCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded">
-              {sectorLabels[objective.sector]}
+              {sectorLabel}
             </span>
             <StatusBadge status={objective.status} />
           </div>
@@ -162,7 +161,7 @@ export function OKRCard({ objective, index }: OKRCardProps) {
         {objective.keyResults.length > 2 && (
           <p className="text-xs text-muted-foreground">
             +{objective.keyResults.length - 2} mais
-            {totalSubKRs > 0 && ` (${totalSubKRs} Sub-KRs)`}
+            {totalTasks > 0 && ` (${totalTasks} Tarefas)`}
           </p>
         )}
       </div>
