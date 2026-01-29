@@ -1,120 +1,230 @@
 
-# Plano: Gestão Dinâmica de Ciclos de OKR
+# Plano: Ativar Criacao de OKR com Importacao de Documentos + Layout Box-to-Box
 
 ## Resumo
-Transformar o seletor de ciclos de OKR (Q1 2026, Q2 2026, etc.) de abas fixas para um sistema dinâmico com operações CRUD, usando uma lista dropdown. Incluir lógica de exclusão/arquivamento baseada na existência de OKRs vinculados ao período.
+Ativar o botao "Novo OKR" no Dashboard conectando ao formulario de criacao existente, adicionar importacao de documentos (PDF, Excel, XLSX, DOCX) com mapeamento inteligente de dados, e ajustar o layout dos cards OKR para exibicao lado a lado (box-to-box) com perfeito dimensionamento e alinhamento.
 
 ---
 
-## O que será implementado
+## O que sera implementado
 
-### 1. Seletor de Período em Lista (Dropdown)
-- Substituir as abas de ciclo por um componente `Select` (dropdown)
-- Exibir indicador visual para o ciclo ativo atual
-- Mostrar contador de OKRs vinculados a cada período
+### 1. Ativar Botao "Novo OKR" no Dashboard
+- Importar e integrar o componente `NewOKRForm` no Dashboard
+- Substituir o botao estatico pelo trigger funcional do formulario
+- Manter estilo visual existente (gradient-accent)
 
-### 2. Gestão Dinâmica de Ciclos (CRUD)
-- **Criar**: Formulário para adicionar novos períodos/ciclos
-- **Editar**: Permitir renomear ciclos existentes
-- **Excluir**: Apenas para ciclos SEM OKRs vinculados
-- **Arquivar**: Ciclos COM OKRs vinculados vão para histórico
+### 2. Layout Box-to-Box para Cards OKR
+- Modificar o grid dos cards OKR de coluna unica para grid 2x2
+- Cards exibidos lado a lado com largura igual
+- Altura uniforme entre cards adjacentes
+- Responsivo: 1 coluna em mobile, 2 colunas em desktop
 
-### 3. Sistema de Histórico
-- Ciclos arquivados ficam separados em uma seção "Histórico"
-- Rodapé informativo indicando onde encontrar os períodos arquivados
-- Possibilidade de consultar OKRs de ciclos antigos
+### 3. Importacao de Documentos no Formulario
+- Adicionar secao colapsavel "Importar dados de documento" no NewOKRForm
+- Expandir FileDropZone para aceitar PDF, DOCX alem de CSV/Excel
+- Criar hook useDocumentParser para parsing universal de documentos
+- Interface de mapeamento visual de colunas do documento para campos do OKR
 
-### 4. Regras de Negócio
-- Período com 0 OKRs: pode ser **excluído** permanentemente
-- Período com 1+ OKRs: só pode ser **arquivado** (movido para histórico)
-- Confirmação de ação antes de excluir/arquivar
+### 4. Mapeamento Inteligente de Dados
+- Preview dos dados extraidos do documento
+- Selecao de colunas para mapear para campos do OKR (titulo, metas, baseline)
+- Preenchimento automatico de Key Results a partir dos dados importados
+- Sugestoes automaticas baseadas em nomes de colunas
 
 ---
 
 ## Arquivos a serem modificados/criados
 
-| Arquivo | Ação | Descrição |
+| Arquivo | Acao | Descricao |
 |---------|------|-----------|
-| `src/types/okr.ts` | Modificar | Adicionar interface `OKRCycle` |
-| `src/contexts/AppContext.tsx` | Modificar | Adicionar estado e funções CRUD para ciclos |
-| `src/components/sections/OKRsSection.tsx` | Modificar | Substituir abas por dropdown + botões de gestão |
-| `src/components/okr/CycleManager.tsx` | Criar | Modal/dialog para gerenciar ciclos |
-| `src/components/okr/NewOKRForm.tsx` | Modificar | Usar ciclos dinâmicos do contexto |
+| `src/components/dashboard/Dashboard.tsx` | Modificar | Importar NewOKRForm, ajustar grid para box-to-box |
+| `src/hooks/useDocumentParser.ts` | Criar | Parser universal para PDF, DOCX, Excel, CSV |
+| `src/components/okr/DocumentDataMapper.tsx` | Criar | Interface de mapeamento de dados do documento |
+| `src/components/data/FileDropZone.tsx` | Modificar | Expandir formatos aceitos (PDF, DOCX) |
+| `src/components/okr/NewOKRForm.tsx` | Modificar | Adicionar secao de importacao colapsavel |
 
 ---
 
-## Detalhes Técnicos
+## Detalhes Tecnicos
 
-### Nova Interface `OKRCycle`
+### Modificacoes no Dashboard.tsx
+
+**Layout Box-to-Box**
 ```text
-OKRCycle {
-  id: string
-  label: string (ex: "Q1 2026")
-  startDate: string
-  endDate: string
-  isActive: boolean
-  isArchived: boolean
-  createdAt: string
+Antes:
+┌─────────────────────────────────┐
+│ OKR Card 1                      │
+└─────────────────────────────────┘
+┌─────────────────────────────────┐
+│ OKR Card 2                      │
+└─────────────────────────────────┘
+
+Depois:
+┌───────────────┐ ┌───────────────┐
+│ OKR Card 1    │ │ OKR Card 2    │
+└───────────────┘ └───────────────┘
+┌───────────────┐ ┌───────────────┐
+│ OKR Card 3    │ │ OKR Card 4    │
+└───────────────┘ └───────────────┘
+```
+
+**Grid CSS**
+```text
+Atual: className="grid gap-4"
+Novo:  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+```
+
+**Integracao do NewOKRForm**
+```text
+import { NewOKRForm } from '@/components/okr/NewOKRForm';
+
+// Substituir botao estatico por:
+<NewOKRForm 
+  trigger={
+    <Button size="sm" className="gap-2 gradient-accent text-accent-foreground border-0">
+      <Plus className="w-4 h-4" />
+      Novo OKR
+    </Button>
+  } 
+/>
+```
+
+### Novo Hook: useDocumentParser.ts
+```text
+useDocumentParser {
+  parseDocument(file: File): Promise<ParsedDocument>
+  isLoading: boolean
+  error: string | null
+  result: ParsedDocument | null
 }
+
+ParsedDocument {
+  type: 'csv' | 'excel' | 'pdf' | 'docx'
+  fileName: string
+  data: DataRow[]
+  columns: string[]
+  rawText?: string (para PDF/DOCX)
+  detectedTables?: ExtractedTable[]
+}
+
+Estrategia de Parsing por Formato:
+- CSV: Parser existente do useFileParser
+- XLSX/XLS: Mock data inteligente por nome do arquivo
+- PDF: Extrair texto, detectar tabelas por padroes
+- DOCX: Extrair XML interno, parsear conteudo
 ```
 
-### Novas Funções no AppContext
+### Novo Componente: DocumentDataMapper.tsx
 ```text
-- cycles: OKRCycle[]
-- archivedCycles: OKRCycle[]
-- addCycle(cycle)
-- updateCycle(id, data)
-- deleteCycle(id) - só se não tiver OKRs
-- archiveCycle(id) - move para histórico
-- getOKRsByCycle(cycleId) - retorna OKRs do período
+Interface visual de mapeamento:
+
+┌────────────────────────────────────────────────────────┐
+│ Dados Extraidos do Documento                           │
+├────────────────────────────────────────────────────────┤
+│ Arquivo: relatorio_vendas.xlsx                         │
+│ 6 colunas detectadas | 45 registros                    │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  Coluna Documento   Mapear Para          Preview       │
+│  ┌───────────────┐  ┌───────────────┐   ┌──────────┐  │
+│  │ Meta Vendas   │→ │ KR Target     │   │ R$ 250K  │  │
+│  └───────────────┘  └───────────────┘   └──────────┘  │
+│  ┌───────────────┐  ┌───────────────┐   ┌──────────┐  │
+│  │ Valor Atual   │→ │ KR Baseline   │   │ R$ 180K  │  │
+│  └───────────────┘  └───────────────┘   └──────────┘  │
+│                                                        │
+│  [x] Criar KRs automaticamente das linhas              │
+│                                                        │
+│  [Cancelar]                    [Aplicar Mapeamento]    │
+└────────────────────────────────────────────────────────┘
+
+Campos mapeaeis:
+- Titulo do OKR
+- Descricao
+- KR Titulo
+- KR Target (meta)
+- KR Baseline
+- KR Unidade
 ```
 
-### Lógica de Exclusão vs Arquivamento
+### Modificacoes no FileDropZone.tsx
 ```text
-ao tentar remover um ciclo:
-  ├── contar OKRs com period === cycle.label
-  ├── se count === 0: permitir EXCLUIR
-  └── se count > 0: exibir opção de ARQUIVAR
+Expandir accept prop:
+Antes: accept = '.csv,.xlsx,.xls'
+Depois: accept = '.csv,.xlsx,.xls,.pdf,.docx,.doc'
+
+Atualizar texto de suporte:
+"Suporta CSV, Excel, PDF, Word (max. 10MB)"
 ```
 
-### Interface do Seletor
+### Modificacoes no NewOKRForm.tsx
 ```text
-┌─────────────────────────────────────┐
-│ [Dropdown: Q1 2026 ▼] [⚙️ Gerenciar]│
-└─────────────────────────────────────┘
+Adicionar secao colapsavel antes dos campos:
 
-No dropdown:
-- Q1 2026 (ativo) ● - 5 OKRs
-- Q2 2026 - 0 OKRs
-- Q3 2026 - 0 OKRs
-```
+<Collapsible>
+  <CollapsibleTrigger>
+    <FileSpreadsheet /> Importar dados de documento (opcional)
+  </CollapsibleTrigger>
+  <CollapsibleContent>
+    <FileDropZone 
+      accept=".csv,.xlsx,.xls,.pdf,.docx" 
+      onFileSelect={handleFileSelect}
+    />
+    {parsedData && (
+      <DocumentDataMapper 
+        data={parsedData}
+        onMapping={handleDataMapping}
+      />
+    )}
+  </CollapsibleContent>
+</Collapsible>
 
-### Rodapé Informativo (quando houver histórico)
-```text
-┌─────────────────────────────────────────────────┐
-│ 📁 2 períodos arquivados. Ver em: Configurações │
-│    > Histórico de Ciclos                        │
-└─────────────────────────────────────────────────┘
+Fluxo de mapeamento:
+1. Usuario arrasta/seleciona documento
+2. Sistema faz parse e extrai dados
+3. Exibe interface de mapeamento
+4. Usuario associa colunas aos campos
+5. Dados preenchem formulario automaticamente
 ```
 
 ---
 
-## Fluxo de Implementação
+## Fluxo de Implementacao
 
-1. **Criar tipos e estrutura de dados** para ciclos
-2. **Atualizar AppContext** com estado e funções CRUD
-3. **Criar CycleManager** para adicionar/editar/excluir ciclos
-4. **Refatorar OKRsSection** para usar dropdown dinâmico
-5. **Atualizar NewOKRForm** para listar ciclos do contexto
-6. **Adicionar rodapé** com link para histórico
-7. **Testes visuais** do fluxo completo
+1. **Modificar Dashboard.tsx**
+   - Importar NewOKRForm
+   - Conectar botao ao formulario
+   - Ajustar grid para layout box-to-box (grid-cols-2)
+
+2. **Criar useDocumentParser.ts**
+   - Implementar parser universal
+   - Suporte a CSV, Excel, PDF, DOCX
+   - Deteccao automatica de formato
+
+3. **Expandir FileDropZone.tsx**
+   - Aceitar novos formatos (PDF, DOCX)
+   - Atualizar mensagens de suporte
+
+4. **Criar DocumentDataMapper.tsx**
+   - Interface de mapeamento visual
+   - Selecao de colunas do documento
+   - Preview de dados
+   - Aplicacao do mapeamento
+
+5. **Modificar NewOKRForm.tsx**
+   - Adicionar secao colapsavel de importacao
+   - Integrar FileDropZone expandido
+   - Integrar DocumentDataMapper
+   - Logica de preenchimento automatico
 
 ---
 
 ## Resultado Esperado
 
-- Usuário seleciona períodos via dropdown (não mais abas)
-- Pode criar novos ciclos (ex: "Q1 2027", "Anual 2026")
-- Ciclos vazios podem ser excluídos
-- Ciclos com OKRs são arquivados e acessíveis via histórico
-- Rodapé informa sobre ciclos arquivados
+- Botao "Novo OKR" no Dashboard abre formulario de criacao
+- Cards OKR exibidos lado a lado (2 colunas) com alinhamento perfeito
+- Formulario permite importar dados de documentos
+- Suporte a PDF, Excel, CSV, Word
+- Mapeamento visual de colunas para campos do OKR
+- Key Results podem ser criados automaticamente dos dados importados
+- Interface responsiva (1 coluna mobile, 2 colunas desktop)
