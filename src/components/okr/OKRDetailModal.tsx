@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Objective, KeyResult } from '@/types/okr';
-import { SubKRList } from './SubKRList';
+import { Objective, KeyResult, Task } from '@/types/okr';
+import { TaskList } from './TaskList';
+import { TaskForm } from './TaskForm';
 import { ProgressBar } from '@/components/dashboard/ProgressBar';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
-import { sectorLabels } from '@/data/mockData';
+import { useApp } from '@/contexts/AppContext';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Calendar, Target, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { User, Calendar, Target, Plus, ChevronDown, ChevronRight, Archive, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OKRDetailModalProps {
@@ -23,6 +24,7 @@ interface OKRDetailModalProps {
 
 export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModalProps) {
   const [expandedKRs, setExpandedKRs] = useState<Set<string>>(new Set());
+  const { tasks, addTask, toggleTaskStatus, archiveObjective, sectors } = useApp();
 
   const toggleKR = (krId: string) => {
     setExpandedKRs(prev => {
@@ -36,10 +38,20 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
     });
   };
 
-  const totalSubKRs = objective.keyResults.reduce(
-    (acc, kr) => acc + (kr.children?.length || 0),
-    0
-  );
+  const getTasksForKR = (krId: string) => {
+    return tasks.filter(t => t.parentKRId === krId);
+  };
+
+  const getTasksForOKR = () => {
+    return tasks.filter(t => t.parentOKRId === objective.id);
+  };
+
+  const handleAddTask = (task: Task) => {
+    addTask(task);
+  };
+
+  const totalTasks = getTasksForOKR().length;
+  const sectorLabel = sectors.find(s => s.slug === objective.sector)?.name || objective.sector;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,7 +59,7 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded">
-              {sectorLabels[objective.sector]}
+              {sectorLabel}
             </span>
             <StatusBadge status={objective.status} />
           </div>
@@ -67,16 +79,35 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
           <div className="flex items-center gap-2 text-muted-foreground">
             <Target className="w-4 h-4" />
             <span>{objective.keyResults.length} KRs</span>
-            {totalSubKRs > 0 && (
-              <span className="text-accent">+ {totalSubKRs} Sub-KRs</span>
-            )}
           </div>
+          {totalTasks > 0 && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ListTodo className="w-4 h-4" />
+              <span>{totalTasks} Tarefas</span>
+            </div>
+          )}
         </div>
 
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Progresso Geral</span>
-            <span className="text-sm font-semibold">{objective.progress}%</span>
+            <div className="flex items-center gap-2">
+              {objective.progress === 100 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => {
+                    archiveObjective(objective.id);
+                    onOpenChange(false);
+                  }}
+                >
+                  <Archive className="w-3 h-3" />
+                  Arquivar
+                </Button>
+              )}
+              <span className="text-sm font-semibold">{objective.progress}%</span>
+            </div>
           </div>
           <ProgressBar progress={objective.progress} status={objective.status} />
         </div>
@@ -84,6 +115,7 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
         <Tabs defaultValue="krs" className="flex-1 overflow-hidden flex flex-col">
           <TabsList>
             <TabsTrigger value="krs">Key Results</TabsTrigger>
+            <TabsTrigger value="tarefas">Tarefas ({totalTasks})</TabsTrigger>
             <TabsTrigger value="historico">Histórico</TabsTrigger>
           </TabsList>
 
@@ -93,10 +125,28 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
                 <KRItem
                   key={kr.id}
                   kr={kr}
+                  okrId={objective.id}
                   isExpanded={expandedKRs.has(kr.id)}
                   onToggle={() => toggleKR(kr.id)}
+                  tasks={getTasksForKR(kr.id)}
+                  onAddTask={handleAddTask}
+                  onToggleTaskStatus={toggleTaskStatus}
                 />
               ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tarefas" className="flex-1 overflow-auto mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  Todas as Tarefas deste OKR
+                </h4>
+              </div>
+              <TaskList 
+                tasks={getTasksForOKR()} 
+                onToggleStatus={toggleTaskStatus}
+              />
             </div>
           </TabsContent>
 
@@ -112,7 +162,7 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
               <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
                 <div className="w-2 h-2 rounded-full bg-accent" />
                 <div className="flex-1">
-                  <p className="text-sm">Sub-KR adicionado: "Vendas para novos clientes"</p>
+                  <p className="text-sm">Tarefa adicionada: "Preparar relatório mensal"</p>
                   <p className="text-xs text-muted-foreground">Ontem por Carlos Silva</p>
                 </div>
               </div>
@@ -133,12 +183,16 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
 
 interface KRItemProps {
   kr: KeyResult;
+  okrId: string;
   isExpanded: boolean;
   onToggle: () => void;
+  tasks: Task[];
+  onAddTask: (task: Task) => void;
+  onToggleTaskStatus: (taskId: string) => void;
 }
 
-function KRItem({ kr, isExpanded, onToggle }: KRItemProps) {
-  const hasChildren = kr.children && kr.children.length > 0;
+function KRItem({ kr, okrId, isExpanded, onToggle, tasks, onAddTask, onToggleTaskStatus }: KRItemProps) {
+  const hasContent = tasks.length > 0;
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
@@ -150,25 +204,21 @@ function KRItem({ kr, isExpanded, onToggle }: KRItemProps) {
         onClick={onToggle}
       >
         <div className="flex items-start gap-3">
-          {hasChildren ? (
-            <button className="mt-0.5 p-0.5 hover:bg-muted rounded">
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              )}
-            </button>
-          ) : (
-            <div className="w-5" />
-          )}
+          <button className="mt-0.5 p-0.5 hover:bg-muted rounded">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <p className="font-medium">{kr.title}</p>
               <StatusBadge status={kr.status} size="sm" />
-              {hasChildren && (
+              {tasks.length > 0 && (
                 <span className="text-xs text-accent bg-accent/10 px-1.5 py-0.5 rounded">
-                  {kr.children!.length} Sub-KRs
+                  {tasks.length} Tarefas
                 </span>
               )}
             </div>
@@ -209,18 +259,19 @@ function KRItem({ kr, isExpanded, onToggle }: KRItemProps) {
         </div>
       </div>
 
-      {hasChildren && isExpanded && (
+      {isExpanded && (
         <div className="border-t border-border bg-muted/10 p-3 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Sub-KRs ({kr.children!.length})
+              Tarefas ({tasks.length})
             </span>
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-              <Plus className="w-3 h-3" />
-              Adicionar Sub-KR
-            </Button>
+            <TaskForm 
+              krId={kr.id} 
+              okrId={okrId} 
+              onTaskCreated={onAddTask}
+            />
           </div>
-          <SubKRList keyResults={kr.children!} level={1} />
+          <TaskList tasks={tasks} onToggleStatus={onToggleTaskStatus} />
         </div>
       )}
     </div>

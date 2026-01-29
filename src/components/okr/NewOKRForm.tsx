@@ -13,7 +13,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Plus, Trash2, Target, AlertCircle, FileSpreadsheet, ChevronDown, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Sector } from '@/types/okr';
 import { FileDropZone } from '@/components/data/FileDropZone';
 import { DocumentDataMapper, MappingResult } from '@/components/okr/DocumentDataMapper';
 import { useDocumentParser, ParsedDocument } from '@/hooks/useDocumentParser';
@@ -34,9 +33,7 @@ const okrFormSchema = z.object({
   description: z.string()
     .min(20, 'Descrição deve ter pelo menos 20 caracteres')
     .max(500, 'Descrição deve ter no máximo 500 caracteres'),
-  sector: z.enum(['comercial', 'financeiro', 'marketing', 'compras', 'operacoes', 'diretoria'], {
-    required_error: 'Selecione um setor',
-  }),
+  sector: z.string().min(1, 'Selecione um setor'),
   owner: z.string().min(2, 'Responsável é obrigatório'),
   period: z.string().min(1, 'Período é obrigatório'),
   priority: z.enum(['high', 'medium', 'low'], {
@@ -46,16 +43,6 @@ const okrFormSchema = z.object({
 });
 
 type OKRFormData = z.infer<typeof okrFormSchema>;
-
-const sectorOptions = [
-  { value: 'comercial', label: 'Comercial' },
-  { value: 'financeiro', label: 'Financeiro' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'compras', label: 'Compras' },
-  { value: 'operacoes', label: 'Operações' },
-  { value: 'diretoria', label: 'Diretoria' },
-];
-
 
 const priorityOptions = [
   { value: 'high', label: 'Alta', color: 'text-status-critical' },
@@ -84,7 +71,7 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedDocument, setParsedDocument] = useState<ParsedDocument | null>(null);
   
-  const { addObjective, cycles } = useApp();
+  const { addObjective, cycles, sectors } = useApp();
   const { parseDocument, isLoading: isParsing, clearResult } = useDocumentParser();
   
   const activeCycles = cycles.filter(c => !c.isArchived);
@@ -167,7 +154,7 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
     addObjective({
       title: data.title,
       description: data.description,
-      sector: data.sector as Sector,
+      sector: data.sector,
       owner: data.owner,
       period: data.period,
       priority: data.priority,
@@ -317,9 +304,9 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {sectorOptions.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
+                          {sectors.map(sector => (
+                            <SelectItem key={sector.id} value={sector.slug}>
+                              {sector.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

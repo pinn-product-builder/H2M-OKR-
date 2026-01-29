@@ -2,13 +2,35 @@ export type OKRStatus = 'on-track' | 'attention' | 'critical';
 
 export type KRType = 'numeric' | 'percentage' | 'boolean';
 
-export type Sector = 
-  | 'comercial'
-  | 'financeiro'
-  | 'marketing'
-  | 'compras'
-  | 'operacoes'
-  | 'diretoria';
+export type TaskStatus = 'pending' | 'in-progress' | 'completed';
+export type TaskPriority = 'high' | 'medium' | 'low';
+
+// Dynamic sector configuration
+export interface SectorConfig {
+  id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+  color?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+// Task interface (formerly Sub-KR)
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  assignedTo: string;
+  assignedToName: string;
+  dueDate?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  createdAt: string;
+  completedAt?: string;
+  parentKRId: string;
+  parentOKRId: string;
+}
 
 export interface KeyResult {
   id: string;
@@ -22,15 +44,16 @@ export interface KeyResult {
   progress: number;
   status: OKRStatus;
   lastUpdate: string;
-  parentId?: string; // ID do KR pai (se for sub-KR)
-  children?: KeyResult[]; // Sub-KRs aninhados
+  parentId?: string;
+  children?: KeyResult[];
+  tasks?: Task[];
 }
 
 export interface Objective {
   id: string;
   title: string;
   description: string;
-  sector: Sector;
+  sector: string;
   owner: string;
   period: string;
   priority: 'high' | 'medium' | 'low';
@@ -39,6 +62,8 @@ export interface Objective {
   status: OKRStatus;
   createdAt: string;
   updatedAt: string;
+  isArchived?: boolean;
+  archivedAt?: string;
 }
 
 export interface MetricCard {
@@ -52,7 +77,7 @@ export interface MetricCard {
 }
 
 export interface SectorSummary {
-  sector: Sector;
+  sector: string;
   label: string;
   totalOKRs: number;
   avgProgress: number;
