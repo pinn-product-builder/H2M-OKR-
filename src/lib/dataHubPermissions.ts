@@ -1,5 +1,11 @@
 import { DataHubPermissions } from '@/types/dataHub';
 
+/**
+ * Check Data Hub access permissions based on user role.
+ * Only 'admin' and 'gestor' roles have full access.
+ * 'analista' can import but not delete or manage mappings.
+ * 'visualizador' cannot access the Data Hub at all.
+ */
 export function checkDataHubAccess(userRole?: string): DataHubPermissions {
   switch (userRole) {
     case 'admin':
@@ -19,23 +25,25 @@ export function checkDataHubAccess(userRole?: string): DataHubPermissions {
         canManageMappings: true,
       };
     case 'analista':
+      // Analistas cannot access Data Hub (restricted to admin/gestor)
       return {
-        canView: true,
-        canImport: true,
+        canView: false,
+        canImport: false,
         canDelete: false,
-        canExport: true,
+        canExport: false,
         canManageMappings: false,
       };
     case 'visualizador':
+      // Visualizadores cannot access Data Hub
       return {
-        canView: true,
+        canView: false,
         canImport: false,
         canDelete: false,
         canExport: false,
         canManageMappings: false,
       };
     default:
-      // Default to admin for now (since mock auth uses 'admin' role)
+      // Default to admin for backward compatibility (mock uses 'admin' role)
       return {
         canView: true,
         canImport: true,

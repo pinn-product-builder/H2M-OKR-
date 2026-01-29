@@ -73,7 +73,7 @@ export interface MetricCard {
   change: number;
   changeLabel: string;
   icon: string;
-  variant: 'primary' | 'accent' | 'success' | 'warning';
+  variant: 'primary' | 'accent' | 'success' | 'warning' | 'critical';
 }
 
 export interface SectorSummary {
