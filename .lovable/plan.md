@@ -1,284 +1,221 @@
 
-# Plano: Sistema de Permissoes com Grupos, Melhorias Data Hub, UI do Tema e Cards Dashboard
+# Revisao Completa de UX/UI - H2M Intelligence
 
-## Resumo
+## Analise do Estado Atual
 
-Implementar sistema de gestao de usuarios com grupos e permissoes RLS para Supabase, restringir Data Source apenas para admin/usuarios com permissao, melhorar tela de Data Source com mapeamento via tabela na criacao, mover seletor de tema para o Header (ao lado do usuario), remover aba Aparencia de Configuracoes, e atualizar os cards do Dashboard para exibir metricas de OKRs e Atividades.
-
----
-
-## O que sera implementado
-
-### 1. Sistema de Gestao de Usuarios com Grupos e Permissoes
-
-**Estrutura no Supabase (RLS):**
-- Criar enum `app_role` com valores: admin, gestor, analista, visualizador
-- Criar tabela `user_roles` vinculada a auth.users
-- Criar funcao security definer `has_role` para verificar roles sem recursao
-- Implementar RLS policies baseadas em roles
-
-**Interface de Gestao (UsuariosSection):**
-- Quadro visual de grupos de permissoes
-- Atribuicao de usuarios a grupos
-- Visualizacao de permissoes por grupo
-- CRUD de usuarios com selecao de role
-
-### 2. Restricao de Acesso ao Data Source
-
-- Modificar `checkDataHubAccess` para negar acesso a usuarios sem role adequada
-- Apenas `admin` e usuarios com permissao `canView` podem acessar
-- Visualizador nao pode importar nem gerenciar mapeamentos
-- Tela de acesso negado para usuarios sem permissao
-
-### 3. Melhorias no Data Hub - Mapeamento via Tabela
-
-**Na tela de Nova Planilha:**
-- Adicionar interface de mapeamento ja na criacao
-- Tabela para definir colunas de origem e campos de destino
-- Pre-configurar transformacoes (SUM, AVG, COUNT, etc.)
-- Validacao de campos obrigatorios
-
-### 4. Seletor de Tema no Header
-
-**Mover tema para Header:**
-- Adicionar Select/Toggle de tema ao lado do usuario logado
-- Opcoes: Claro e Escuro (remover Sistema por simplicidade)
-- Criar contexto de tema para persistir preferencia
-
-**Remover de Configuracoes:**
-- Eliminar aba "Aparencia" do ConfiguracoesSection
-- Remover opcoes de cor de destaque, animacoes e modo compacto
-
-### 5. Atualizar Cards do Dashboard
-
-**Novos cards:**
-1. **OKRs no Prazo** - Quantidade de OKRs com status 'on-track'
-2. **OKRs em Atraso** - Quantidade de OKRs com status 'attention' ou 'critical'
-3. **Atividades no Prazo** - Tarefas completas ou em andamento dentro do prazo
-4. **Atividades em Atraso** - Tarefas pendentes com prazo expirado
+Apos revisar toda a interface do sistema, identifiquei os seguintes pontos de melhoria organizados por categoria:
 
 ---
 
-## Arquivos a serem modificados/criados
+## 1. Paleta de Cores e Consistencia Visual
 
-| Arquivo | Acao | Descricao |
-|---------|------|-----------|
-| `src/types/user.ts` | Criar | Tipos para roles, grupos e permissoes |
-| `src/contexts/ThemeContext.tsx` | Criar | Contexto de tema com persistencia |
-| `src/components/layout/Header.tsx` | Modificar | Adicionar seletor de tema |
-| `src/components/sections/UsuariosSection.tsx` | Modificar | Quadro de grupos e gestao de permissoes |
-| `src/components/sections/ConfiguracoesSection.tsx` | Modificar | Remover aba Aparencia |
-| `src/components/sections/DataSourceSection.tsx` | Modificar | Mapeamento na criacao |
-| `src/components/data/NewSourceWithMapping.tsx` | Criar | Dialog de nova fonte com mapeamento |
-| `src/lib/dataHubPermissions.ts` | Modificar | Refinar permissoes |
-| `src/data/mockData.ts` | Modificar | Novos cards de metricas |
-| `src/components/dashboard/Dashboard.tsx` | Modificar | Usar metricas dinamicas |
-| `src/App.tsx` | Modificar | Adicionar ThemeProvider |
-| `.lovable/supabase_migrations/` | Criar | Migrations para user_roles e RLS |
+### Problemas Identificados:
+- Cores de status usam variaveis inconsistentes (algumas usam `--status-success`, outras `--success`)
+- O contraste do tema escuro precisa de ajustes para melhor legibilidade
+- Gradientes dos cards de metrica podem ser mais sutis e profissionais
+- A cor accent (teal) poderia ter mais variantes para diferentes estados
+
+### Melhorias Propostas:
+- Unificar variaveis de cores de status
+- Adicionar tons intermediarios para hover e pressed states
+- Ajustar gradientes para serem menos saturados e mais corporativos
+- Melhorar contraste em textos secundarios no dark mode
 
 ---
 
-## Detalhes Tecnicos
+## 2. Tipografia e Hierarquia Visual
 
-### Novos Tipos (user.ts)
-```text
-AppRole = 'admin' | 'gestor' | 'analista' | 'visualizador'
+### Problemas Identificados:
+- Falta de consistencia nos tamanhos de titulos entre secoes
+- Subtitulos e labels muito similares em peso visual
+- Espacamento vertical inconsistente entre blocos de texto
 
-UserRole {
-  id: string
-  userId: string
-  role: AppRole
-}
-
-RolePermissions {
-  role: AppRole
-  label: string
-  description: string
-  permissions: {
-    canManageUsers: boolean
-    canAccessDataHub: boolean
-    canImportData: boolean
-    canManageOKRs: boolean
-    canEditOKRs: boolean
-    canViewDashboard: boolean
-    canManageSettings: boolean
-  }
-}
-```
-
-### ThemeContext
-```text
-ThemeContext {
-  theme: 'light' | 'dark'
-  setTheme: (theme) => void
-}
-
-// Persistir em localStorage
-// Aplicar classe no document.documentElement
-```
-
-### Migracao Supabase - user_roles
-```sql
--- Criar enum para roles
-create type public.app_role as enum ('admin', 'gestor', 'analista', 'visualizador');
-
--- Criar tabela user_roles
-create table public.user_roles (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  role app_role not null,
-  created_at timestamp with time zone default now(),
-  unique (user_id, role)
-);
-
--- Habilitar RLS
-alter table public.user_roles enable row level security;
-
--- Funcao security definer para verificar role
-create or replace function public.has_role(_user_id uuid, _role app_role)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.user_roles
-    where user_id = _user_id
-      and role = _role
-  )
-$$;
-
--- Policy: Admins podem ver todos os roles
-create policy "Admins can view all roles"
-on public.user_roles
-for select
-to authenticated
-using (public.has_role(auth.uid(), 'admin'));
-
--- Policy: Usuarios podem ver seu proprio role
-create policy "Users can view own role"
-on public.user_roles
-for select
-to authenticated
-using (user_id = auth.uid());
-```
-
-### Quadro de Gestao de Grupos (UsuariosSection)
-```text
-┌────────────────────────────────────────────────────────┐
-│ Gestao de Usuarios e Grupos                            │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────┐│
-│ │ ADMIN       │ │ GESTOR      │ │ ANALISTA    │ │ VIS ││
-│ │             │ │             │ │             │ │     ││
-│ │ ● Carlos    │ │ ● Roberto   │ │ ● Ana       │ │ ● M ││
-│ │             │ │ ● Fernanda  │ │ ● Pedro     │ │     ││
-│ │             │ │ ● Bruno     │ │ ● Maria     │ │     ││
-│ │             │ │ ● Andre     │ │             │ │     ││
-│ │             │ │             │ │             │ │     ││
-│ │ [1 usuario] │ │ [4 usuarios]│ │ [3 usuarios]│ │ [1] ││
-│ └─────────────┘ └─────────────┘ └─────────────┘ └─────┘│
-│                                                        │
-│ Arrastar usuarios entre grupos para alterar role       │
-└────────────────────────────────────────────────────────┘
-```
-
-### Cards do Dashboard - Novas Metricas
-```text
-Card 1: OKRs no Prazo
-  - Contagem de objectives com status === 'on-track'
-  - Icone: Target (verde)
-  - Variante: success
-
-Card 2: OKRs em Atraso
-  - Contagem de objectives com status === 'attention' ou 'critical'
-  - Icone: AlertTriangle (vermelho)
-  - Variante: warning/critical
-
-Card 3: Atividades no Prazo
-  - Tarefas com status !== 'completed' E sem dueDate expirado
-  - Icone: CheckCircle
-  - Variante: success
-
-Card 4: Atividades em Atraso
-  - Tarefas pendentes com dueDate < hoje
-  - Icone: Clock (vermelho)
-  - Variante: critical
-```
-
-### Seletor de Tema no Header
-```text
-Antes do avatar do usuario:
-
-┌────────────────────────────────────┐
-│ [🔔] [☀️/🌙 ▼] [👤 Carlos ▼]     │
-└────────────────────────────────────┘
-
-Select simples:
-  - ☀️ Claro
-  - 🌙 Escuro
-```
-
-### Nova Fonte com Mapeamento (NewSourceWithMapping)
-```text
-┌────────────────────────────────────────────────────────┐
-│ Nova Fonte de Dados                                    │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│ Nome da Fonte: [________________]                      │
-│ Tabela Destino: [Faturamento Mensal ▼]                │
-│                                                        │
-│ ─────────────────────────────────────                  │
-│ Mapeamento de Colunas (opcional)                       │
-│ ─────────────────────────────────────                  │
-│                                                        │
-│ │ Coluna Arquivo  │ Campo Sistema │ Transformacao │   │
-│ │─────────────────│───────────────│───────────────│   │
-│ │ [valor_total   ]│ [Valor      ▼]│ [SUM        ▼]│   │
-│ │ [data_venda    ]│ [Data       ▼]│ [NONE       ▼]│   │
-│ │ [setor         ]│ [Setor      ▼]│ [NONE       ▼]│   │
-│ │                 │ [+ Adicionar ]│               │   │
-│                                                        │
-│ [Cancelar]                    [Criar Fonte]           │
-└────────────────────────────────────────────────────────┘
-```
-
-### ConfiguracoesSection Atualizado
-```text
-Tabs atualizadas (removendo Aparencia):
-
-Admin:    [Geral] [Integracao] [Notificacoes] [Seguranca] [Setores]
-Non-Admin: [Geral] [Integracao] [Notificacoes] [Seguranca]
-```
+### Melhorias Propostas:
+- Estabelecer escala tipografica mais clara (h1: 28px, h2: 22px, h3: 18px, h4: 16px)
+- Usar font-weight 700 para titulos principais, 600 para subtitulos, 500 para labels
+- Padronizar line-height para melhor legibilidade
 
 ---
 
-## Fluxo de Implementacao
+## 3. Componentes de Dashboard
 
-1. **Criar tipos** (user.ts): Roles, permissoes e grupos
-2. **Criar ThemeContext**: Contexto de tema com persistencia
-3. **Atualizar App.tsx**: Adicionar ThemeProvider
-4. **Modificar Header**: Adicionar seletor de tema
-5. **Atualizar ConfiguracoesSection**: Remover aba Aparencia
-6. **Atualizar UsuariosSection**: Quadro de gestao de grupos
-7. **Modificar mockData**: Novos cards de metricas
-8. **Atualizar Dashboard**: Usar metricas dinamicas de OKRs/Tarefas
-9. **Criar NewSourceWithMapping**: Dialog com mapeamento integrado
-10. **Atualizar DataSourceSection**: Integrar novo dialog
-11. **Refinar dataHubPermissions**: Restricoes de acesso
-12. **Criar migration SQL**: Estrutura para Supabase (user_roles)
+### MetricCard
+**Atual**: Gradientes muito saturados, icones genericos
+**Melhoria**: 
+- Gradientes mais sutis com overlay branco
+- Icones especificos para cada metrica
+- Adicionar sparkline mini-grafico
+- Efeito hover mais sutil
+
+### OKRCard
+**Atual**: Muita informacao comprimida, grafico pequeno
+**Melhoria**:
+- Aumentar altura do grafico de evolucao
+- Melhorar separacao visual entre secoes
+- Adicionar indicador de tendencia (seta up/down)
+- Preview de KRs com progress bars visuais
+
+### QuickStats / SectorOverview
+**Atual**: Layout funcional mas sem destaque visual
+**Melhoria**:
+- Adicionar icones coloridos por setor
+- Progress rings ao inves de barras para resumo
+- Hover state mais interativo
 
 ---
 
-## Resultado Esperado
+## 4. Layout e Espacamento
 
-- Sistema de grupos de usuarios com visualizacao clara de permissoes
-- Data Source acessivel apenas para admin e usuarios autorizados
-- Mapeamento de campos disponivel ja na criacao de fontes
-- Tema claro/escuro selecionavel no Header (simples e acessivel)
-- Aba Aparencia removida de Configuracoes
-- Dashboard mostrando metricas de OKRs no Prazo, em Atraso, Atividades no Prazo e em Atraso
-- Estrutura preparada para integracao com Supabase RLS
+### Problemas Identificados:
+- Sidebar fixa ocupa espaco em telas menores
+- Gaps inconsistentes entre cards (gap-4, gap-6)
+- Header muito simples, sem hierarquia clara
+
+### Melhorias Propostas:
+- Padronizar gaps: 4 (16px) para interno, 6 (24px) para secoes
+- Melhorar header com breadcrumbs ou indicador de secao
+- Adicionar shadow mais definida na sidebar para separacao
+
+---
+
+## 5. Graficos e Visualizacao de Dados (Recharts)
+
+### Problemas Identificados:
+- Cores de graficos usam HSL inline (dificil manutencao)
+- Tooltips com estilo basico
+- Falta de animacoes suaves nos graficos
+- Labels dos eixos muito pequenas
+
+### Melhorias Propostas:
+- Criar paleta de cores dedicada para graficos
+- Custom tooltips com design consistente
+- Adicionar animacoes de entrada
+- Aumentar fonte dos labels para 13px
+
+---
+
+## 6. Formularios e Modais
+
+### NewOKRForm / TaskForm
+**Atual**: Formularios longos sem indicador de progresso
+**Melhoria**:
+- Adicionar stepper visual para formularios longos
+- Agrupar campos relacionados em cards
+- Validacao inline mais clara
+- Botoes de acao com estados de loading
+
+### Modais (OKRDetailModal, ImportWizard)
+**Atual**: Conteudo denso, scrolling excessivo
+**Melhoria**:
+- Tabs com icones para navegacao rapida
+- Sticky header dentro do modal
+- Animacoes de transicao entre abas
+- Melhor indicador de progresso no wizard
+
+---
+
+## 7. Tabelas e Listas
+
+### Problemas Identificados:
+- Tabelas sem zebra striping
+- Acoes muito comprimidas
+- Falta de feedback visual em hover
+
+### Melhorias Propostas:
+- Adicionar alternancia de cor nas linhas
+- Hover com destaque de toda a linha
+- Acoes com tooltips explicativos
+- Paginacao estilizada
+
+---
+
+## 8. Estados Vazios e Loading
+
+### Atual:
+- Estados vazios com apenas texto
+- Loading generico (Loader2)
+
+### Melhorias:
+- Ilustracoes SVG para estados vazios
+- Skeleton loaders para cards e tabelas
+- Animacoes de carregamento contextuais
+
+---
+
+## 9. Responsividade
+
+### Pontos de Atencao:
+- Sidebar colapsavel ja existe mas precisa melhor transicao
+- Cards de metrica precisam de layout vertical em mobile
+- Tabelas precisam de scroll horizontal em telas pequenas
+
+---
+
+## Implementacao Tecnica
+
+### Arquivos a Modificar:
+
+1. **src/index.css** - Atualizacao completa de variaveis CSS
+   - Novas variaveis de cores
+   - Classes utilitarias adicionais
+   - Keyframes para animacoes
+
+2. **src/components/dashboard/MetricCard.tsx**
+   - Redesign com gradientes sutis
+   - Adicionar micro-interacoes
+
+3. **src/components/dashboard/OKRCard.tsx**
+   - Aumentar grafico
+   - Melhorar layout de KRs
+
+4. **src/components/dashboard/ProgressBar.tsx**
+   - Adicionar animacao de entrada
+   - Variante com label integrado
+
+5. **src/components/dashboard/StatusBadge.tsx**
+   - Icones opcionais
+   - Variantes de tamanho
+
+6. **src/components/layout/Sidebar.tsx**
+   - Transicoes mais suaves
+   - Indicador ativo mais visivel
+
+7. **src/components/layout/Header.tsx**
+   - Adicionar breadcrumbs
+   - Melhorar espacamento
+
+8. **src/pages/Login.tsx**
+   - Background mais elaborado
+   - Animacoes de entrada
+
+9. **src/components/sections/IndicadoresSection.tsx**
+   - Tooltips customizados
+   - Paleta de cores dos graficos
+
+10. **Componentes UI base** (card, badge, button)
+    - Ajustes finos de cores e sombras
+
+---
+
+## Resumo das Principais Mudancas
+
+| Area | Antes | Depois |
+|------|-------|--------|
+| Cores | Gradientes saturados | Tons sutis, mais corporativo |
+| Cards | Sombras leves | Sombras em camadas, hover elevado |
+| Graficos | Cores inline | Paleta consistente |
+| Estados | Texto simples | Ilustracoes + animacoes |
+| Espacamento | Inconsistente | Grid de 4px padronizado |
+| Dark Mode | Contraste baixo | Contraste WCAG AA |
+
+---
+
+## Ordem de Execucao
+
+1. Atualizar variaveis CSS globais (index.css)
+2. Refatorar MetricCard e OKRCard
+3. Melhorar graficos da IndicadoresSection
+4. Ajustar Sidebar e Header
+5. Refinar formularios e modais
+6. Adicionar estados de loading/empty
+7. Testes de responsividade
