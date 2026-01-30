@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 const sectionTitles: Record<string, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Visão geral dos OKRs e indicadores' },
   okrs: { title: 'Gestão de OKRs', subtitle: 'Cadastro e acompanhamento de objetivos' },
-  indicadores: { title: 'Indicadores', subtitle: 'KPIs e métricas do negócio' },
+  // indicadores: { title: 'Indicadores', subtitle: 'KPIs e métricas do negócio' }, // Temporariamente oculto
   datasource: { title: 'Data Source', subtitle: 'Fontes de dados e importação de métricas' },
   usuarios: { title: 'Usuários', subtitle: 'Gerenciamento de usuários e permissões' },
   configuracoes: { title: 'Configurações', subtitle: 'Configurações do sistema' },
@@ -40,7 +40,7 @@ const Index = () => {
         <div className="p-6">
           {currentSection === 'dashboard' && <Dashboard />}
           {currentSection === 'okrs' && <OKRsSection />}
-          {currentSection === 'indicadores' && <IndicadoresSection />}
+          {/* {currentSection === 'indicadores' && <IndicadoresSection />} */}
           {currentSection === 'datasource' && <DataSourceSection />}
           {currentSection === 'usuarios' && <UsuariosSection />}
           {currentSection === 'configuracoes' && <ConfiguracoesSection />}

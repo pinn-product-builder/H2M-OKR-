@@ -20,7 +20,7 @@ interface SidebarProps {
 const mainNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'okrs', label: 'OKRs', icon: Target },
-  { id: 'indicadores', label: 'Indicadores', icon: BarChart3 },
+  // { id: 'indicadores', label: 'Indicadores', icon: BarChart3 }, // Temporariamente oculto
   { id: 'datasource', label: 'Data Source', icon: Database },
 ];
 
