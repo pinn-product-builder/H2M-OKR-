@@ -108,7 +108,7 @@ export function TaskForm({ krId, okrId, onTaskCreated, trigger }: TaskFormProps)
       return; // Should not happen due to UI validation
     }
 
-    const selectedProfile = profiles.find(p => p.id === data.assignedTo);
+    const selectedProfile = profiles.find(p => p.user_id === data.assignedTo);
     
     try {
       await createTask.mutateAsync({
@@ -243,7 +243,7 @@ export function TaskForm({ krId, okrId, onTaskCreated, trigger }: TaskFormProps)
                         </FormControl>
                         <SelectContent>
                           {profiles.map(profile => (
-                            <SelectItem key={profile.id} value={profile.id}>
+                            <SelectItem key={profile.user_id} value={profile.user_id}>
                               {profile.name}
                             </SelectItem>
                           ))}
