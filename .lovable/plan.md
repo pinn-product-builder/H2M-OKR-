@@ -1,289 +1,206 @@
 
-# Sistema de Views Personalizadas para OKRs e Dashboards
+# Implementacao do Mapa de KR para Criacao de Tarefas
 
 ## Visao Geral
 
-Este plano implementa um sistema completo de **views personalizadas** que permite aos usuarios criar, salvar e gerenciar visualizacoes customizadas tanto para OKRs quanto para Dashboards, com persistencia no Supabase.
-
----
-
-## Arquitetura da Solucao
+Atualmente, o `TaskForm` recebe `krId` e `okrId` como props obrigatorias, funcionando apenas dentro do contexto de um KR especifico (no `OKRDetailModal`). Esta implementacao adicionara um **seletor visual hierarquico** (Mapa de KR) que permite criar tarefas a partir de qualquer contexto, visualizando a estrutura:
 
 ```text
-+------------------+     +-------------------+     +------------------+
-|   user_views     |     | dashboard_configs |     |   view_widgets   |
-+------------------+     +-------------------+     +------------------+
-| id (uuid)        |     | id (uuid)         |     | id (uuid)        |
-| user_id (uuid)   |     | view_id (uuid) FK |---->| view_id (uuid)   |
-| name (text)      |     | layout (jsonb)    |     | type (text)      |
-| type (enum)      |     | widgets (jsonb[]) |     | config (jsonb)   |
-| filters (jsonb)  |     | created_at        |     | position (int)   |
-| is_default (bool)|     | updated_at        |     | size (text)      |
-| is_shared (bool) |     +-------------------+     +------------------+
-| shared_with (uuid[])
-| created_at       |
-| updated_at       |
-+------------------+
+Objetivo (OKR)
+ └── Key Result 1  ← selecionar
+ └── Key Result 2  ← selecionar
 ```
 
 ---
 
-## Funcionalidades Principais
+## Funcionalidades
 
-### 1. Views de OKRs
-- **Filtros Salvos**: Ciclo, Setor, Status, Responsavel, Busca textual
-- **Modo de Visualizacao**: Grid ou Lista (preferencia salva)
-- **Ordenacao**: Por progresso, data de criacao, status
-- **Views Padrao**: Cada usuario pode ter 1 view padrao que carrega automaticamente
-
-### 2. Dashboards Personalizados
-- **Widgets Configuraveis**: Metricas, OKRs por setor, graficos de progresso
-- **Layout Drag-and-Drop**: Reorganizar widgets na tela
-- **Filtros Globais**: Periodo, setor, responsavel
-- **Views por Setor**: Dashboard especifico por area (Comercial, Marketing, etc.)
-
-### 3. Compartilhamento
-- **Views Privadas**: Apenas o criador ve
-- **Views Compartilhadas**: Compartilhar com usuarios especificos
-- **Views Publicas (Gestor+)**: Visiveis para toda a organizacao
+1. **KRMap Component**: Componente visual que exibe a hierarquia OKR/KR em formato arvore expansivel
+2. **TaskFormWithKRMap**: Nova versao do TaskForm que inclui o seletor de KR quando `krId` nao for fornecido
+3. **Filtros de contexto**: Opcao de filtrar por ciclo ativo e setor
+4. **Preview do KR selecionado**: Exibe informacoes do KR escolhido (progresso, responsavel, etc.)
 
 ---
 
-## Implementacao Tecnica
+## Arquitetura
 
-### Fase 1: Banco de Dados
-
-**Nova Tabela: `user_views`**
-```sql
-create type view_type as enum ('okr', 'dashboard');
-
-create table public.user_views (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  name text not null,
-  type view_type not null,
-  filters jsonb default '{}',
-  layout jsonb default '{}',
-  is_default boolean default false,
-  is_shared boolean default false,
-  shared_with uuid[] default '{}',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- RLS Policies
-alter table public.user_views enable row level security;
-
--- Usuarios podem ver suas proprias views
-create policy "Users can view own views"
-  on public.user_views for select
-  using (user_id = auth.uid());
-
--- Usuarios podem ver views compartilhadas com eles
-create policy "Users can view shared views"
-  on public.user_views for select
-  using (auth.uid() = any(shared_with));
-
--- Gestores podem ver views publicas
-create policy "Gestors can view public views"
-  on public.user_views for select
-  using (is_shared = true and (
-    has_role(auth.uid(), 'admin') or 
-    has_role(auth.uid(), 'gestor')
-  ));
-
--- CRUD para proprias views
-create policy "Users can manage own views"
-  on public.user_views for all
-  using (user_id = auth.uid());
-```
-
-**Nova Tabela: `dashboard_widgets`**
-```sql
-create type widget_type as enum (
-  'metric_card',
-  'okr_list', 
-  'sector_overview',
-  'progress_chart',
-  'quick_stats',
-  'task_summary'
-);
-
-create table public.dashboard_widgets (
-  id uuid primary key default gen_random_uuid(),
-  view_id uuid references public.user_views(id) on delete cascade not null,
-  type widget_type not null,
-  title text,
-  config jsonb default '{}',
-  position integer default 0,
-  size text default 'medium', -- small, medium, large, full
-  created_at timestamptz default now()
-);
-
-alter table public.dashboard_widgets enable row level security;
-
-create policy "Users can manage widgets through views"
-  on public.dashboard_widgets for all
-  using (
-    exists (
-      select 1 from public.user_views v 
-      where v.id = view_id and v.user_id = auth.uid()
-    )
-  );
-```
-
-### Fase 2: Hooks e Estado
-
-**Arquivo: `src/hooks/useViews.ts`**
-```typescript
-// Hooks para gerenciar views
-export function useUserViews(type: 'okr' | 'dashboard')
-export function useCreateView()
-export function useUpdateView()
-export function useDeleteView()
-export function useSetDefaultView()
-export function useDashboardWidgets(viewId: string)
-```
-
-### Fase 3: Componentes de UI
-
-**Novos Componentes:**
-
-1. **`src/components/views/ViewSelector.tsx`**
-   - Dropdown para selecionar view salva
-   - Botao "Salvar View Atual"
-   - Opcao "Gerenciar Views"
-
-2. **`src/components/views/ViewManager.tsx`**
-   - Modal para listar, editar, excluir views
-   - Configurar view padrao
-   - Compartilhar com outros usuarios
-
-3. **`src/components/views/SaveViewDialog.tsx`**
-   - Dialog para salvar nova view
-   - Nome, tipo, opcoes de compartilhamento
-
-4. **`src/components/dashboard/DashboardBuilder.tsx`**
-   - Interface para montar dashboard
-   - Adicionar/remover widgets
-   - Configurar cada widget
-
-5. **`src/components/dashboard/WidgetConfig.tsx`**
-   - Painel lateral de configuracao de widget
-   - Filtros especificos por tipo de widget
-
-### Fase 4: Integracao
-
-**Atualizar `OKRsSection.tsx`:**
-- Adicionar ViewSelector no toolbar
-- Carregar filtros da view selecionada
-- Salvar alteracoes de filtro como nova view
-
-**Atualizar `Dashboard.tsx`:**
-- Renderizar widgets dinamicamente
-- Permitir modo de edicao (drag-and-drop)
-- Salvar layout personalizado
-
----
-
-## Estrutura de Dados (JSON)
-
-### Filtros de OKR View
-```json
-{
-  "cycleId": "uuid",
-  "sectorIds": ["uuid"],
-  "status": ["on-track", "attention"],
-  "ownerIds": ["uuid"],
-  "search": "texto",
-  "viewMode": "grid",
-  "sortBy": "progress",
-  "sortOrder": "desc"
-}
-```
-
-### Layout de Dashboard View
-```json
-{
-  "columns": 3,
-  "globalFilters": {
-    "cycleId": "uuid",
-    "sectorId": "uuid"
-  }
-}
-```
-
-### Config de Widget
-```json
-{
-  "metricType": "okrs-on-track",
-  "showTrend": true,
-  "limit": 5
-}
+```text
+TaskFormWithKRMap
+├── Se krId fornecido → comportamento atual (sem mapa)
+└── Se krId NAO fornecido:
+    ├── KRMap (seletor hierarquico)
+    │   ├── Filtro por Ciclo
+    │   ├── Lista de OKRs expansiveis
+    │   │   └── Key Results clicaveis
+    │   └── Preview do KR selecionado
+    └── Formulario de Tarefa (campos existentes)
 ```
 
 ---
 
 ## Fluxo de Usuario
 
-### Criar View de OKR:
-1. Usuario aplica filtros (setor, status, busca)
-2. Clica em "Salvar View"
-3. Nomeia a view (ex: "Meus OKRs Comerciais")
-4. Define se eh padrao
-5. View aparece no seletor
+1. Usuario abre o formulario de "Nova Tarefa" (de qualquer lugar)
+2. Se nao houver KR pre-selecionado, exibe o Mapa de KR
+3. Usuario expande um OKR para ver seus KRs
+4. Usuario clica em um KR para seleciona-lo
+5. Card de preview mostra detalhes do KR
+6. Usuario preenche os campos da tarefa (titulo, responsavel, prazo, prioridade)
+7. Ao salvar, tarefa eh vinculada ao KR selecionado
 
-### Criar Dashboard Personalizado:
-1. Usuario clica em "Editar Dashboard"
-2. Adiciona widgets da biblioteca
-3. Configura cada widget (setor, metricas)
-4. Arrasta para reorganizar
-5. Clica em "Salvar" -> cria nova view
+---
 
-### Compartilhar View:
-1. Usuario abre "Gerenciar Views"
-2. Clica em compartilhar
-3. Seleciona usuarios ou marca como publica
-4. Usuarios selecionados veem a view no seletor
+## Componentes a Criar
+
+### 1. `src/components/okr/KRMap.tsx`
+Componente visual para navegacao hierarquica:
+
+```typescript
+interface KRMapProps {
+  selectedKRId?: string;
+  onSelectKR: (krId: string, okrId: string, krTitle: string, okrTitle: string) => void;
+  cycleFilter?: string;
+}
+```
+
+**Caracteristicas:**
+- Accordion com OKRs agrupados por setor
+- Cada OKR eh expansivel para mostrar seus KRs
+- KRs mostram: titulo, progresso, status (badge colorido)
+- Item selecionado tem destaque visual
+- Suporte a busca por texto
+
+### 2. `src/components/okr/KRPreview.tsx`
+Card de preview do KR selecionado:
+
+```typescript
+interface KRPreviewProps {
+  krId: string;
+  okrId: string;
+  krTitle: string;
+  okrTitle: string;
+  onClear: () => void;
+}
+```
+
+**Mostra:**
+- Titulo do OKR pai
+- Titulo do KR
+- Progresso atual (barra)
+- Responsavel
+- Botao para limpar selecao
+
+### 3. Atualizacao do `TaskForm.tsx`
+Tornar `krId` e `okrId` opcionais e integrar o mapa:
+
+```typescript
+interface TaskFormProps {
+  krId?: string;        // Opcional agora
+  okrId?: string;       // Opcional agora
+  onTaskCreated?: (task: Task) => void;
+  trigger?: React.ReactNode;
+}
+```
+
+**Logica:**
+- Se `krId` fornecido → usa direto (comportamento atual)
+- Se `krId` nao fornecido → exibe KRMap como primeiro passo
+- Formulario so habilita apos selecao de KR
+
+---
+
+## Design Visual
+
+### KRMap Layout:
+```text
+┌────────────────────────────────────────┐
+│ 🔍 Buscar OKR ou KR...                │
+├────────────────────────────────────────┤
+│ ▼ Comercial                           │
+│   ├─ ▼ Aumentar faturamento Q1        │
+│   │    ├─ ○ KR1: Novos clientes (45%) │
+│   │    └─ ● KR2: Ticket médio (72%) ← │
+│   └─ ▶ Melhorar conversão...          │
+│                                        │
+│ ▶ Marketing                           │
+│ ▶ Produção                            │
+└────────────────────────────────────────┘
+```
+
+### Estados visuais:
+- **Normal**: fundo neutro, texto padrao
+- **Hover**: fundo muted, cursor pointer
+- **Selecionado**: borda accent, fundo accent/10, icone preenchido
+- **Progresso**: badges coloridos (success/warning/critical)
 
 ---
 
 ## Arquivos a Criar/Modificar
 
 ### Novos Arquivos:
-- `src/hooks/useViews.ts` - Hooks de gerenciamento de views
-- `src/components/views/ViewSelector.tsx` - Seletor de views
-- `src/components/views/ViewManager.tsx` - Gerenciador de views
-- `src/components/views/SaveViewDialog.tsx` - Dialog para salvar
-- `src/components/dashboard/DashboardBuilder.tsx` - Editor visual
-- `src/components/dashboard/WidgetLibrary.tsx` - Biblioteca de widgets
-- `src/components/dashboard/WidgetRenderer.tsx` - Renderizador dinamico
-- `src/types/views.ts` - Tipos TypeScript
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/components/okr/KRMap.tsx` | Componente de mapa hierarquico |
+| `src/components/okr/KRPreview.tsx` | Card de preview do KR selecionado |
 
 ### Arquivos a Modificar:
-- `src/components/sections/OKRsSection.tsx` - Integrar ViewSelector
-- `src/components/dashboard/Dashboard.tsx` - Suportar layout dinamico
-- `src/hooks/useSupabaseData.ts` - Adicionar queries de views
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/components/okr/TaskForm.tsx` | Tornar krId/okrId opcionais, integrar KRMap |
+
+---
+
+## Implementacao Tecnica
+
+### Hook de dados para KRMap
+Reutiliza `useObjectives` ja existente que retorna:
+```typescript
+objectives: {
+  id, title, sector, status, progress,
+  key_results: [
+    { id, title, status, current_value, target_value, owner }
+  ]
+}
+```
+
+### Schema de validacao atualizado
+```typescript
+const taskSchema = z.object({
+  krId: z.string().min(1, 'Selecione um Key Result'),  // Novo campo
+  okrId: z.string().min(1, 'OKR obrigatório'),         // Novo campo
+  title: z.string().min(3).max(100),
+  description: z.string().max(500).optional(),
+  assignedTo: z.string().min(1, 'Selecione um responsável'),
+  dueDate: z.date().optional(),
+  priority: z.enum(['high', 'medium', 'low']),
+});
+```
+
+---
+
+## Casos de Uso
+
+| Local | Comportamento |
+|-------|---------------|
+| Dentro do OKRDetailModal (KR expandido) | krId passado como prop → sem mapa |
+| Botao "Nova Tarefa" global | Sem krId → exibe mapa completo |
+| Acao rapida de usuario | Sem krId → exibe mapa |
 
 ---
 
 ## Ordem de Execucao
 
-1. **Migracao SQL** - Criar tabelas `user_views` e `dashboard_widgets` com RLS
-2. **Tipos TypeScript** - Definir interfaces em `src/types/views.ts`
-3. **Hook useViews** - Implementar CRUD de views
-4. **ViewSelector** - Componente de selecao
-5. **SaveViewDialog** - Componente de salvamento
-6. **Integracao OKRsSection** - Filtros persistentes
-7. **ViewManager** - Gerenciamento completo
-8. **DashboardBuilder** - Editor visual (fase 2)
-9. **Widgets Dinamicos** - Renderizacao configuravel (fase 2)
+1. Criar `KRPreview.tsx` - componente simples de preview
+2. Criar `KRMap.tsx` - componente hierarquico com busca
+3. Atualizar `TaskForm.tsx` - integrar mapa quando krId ausente
+4. Testar fluxo completo de criacao de tarefas
 
 ---
 
-## Consideracoes de Seguranca
+## Consideracoes de UX
 
-- Views sao vinculadas a `user_id` via RLS
-- Compartilhamento validado no backend
-- Apenas admins/gestores podem criar views publicas
-- Widgets herdam permissoes da view pai
+- Filtro por ciclo ativo por padrao
+- Expansao automatica do primeiro OKR se houver poucos
+- Animacao suave de expansao/colapso
+- Feedback visual claro de item selecionado
+- Validacao: nao permitir submit sem KR selecionado
