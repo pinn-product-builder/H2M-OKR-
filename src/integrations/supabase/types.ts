@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_widgets: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          position: number | null
+          size: string | null
+          title: string | null
+          type: Database["public"]["Enums"]["widget_type"]
+          view_id: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          position?: number | null
+          size?: string | null
+          title?: string | null
+          type: Database["public"]["Enums"]["widget_type"]
+          view_id: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          position?: number | null
+          size?: string | null
+          title?: string | null
+          type?: Database["public"]["Enums"]["widget_type"]
+          view_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_widgets_view_id_fkey"
+            columns: ["view_id"]
+            isOneToOne: false
+            referencedRelation: "user_views"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_logs: {
         Row: {
           completed_at: string | null
@@ -397,11 +438,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_views: {
+        Row: {
+          created_at: string | null
+          filters: Json | null
+          id: string
+          is_default: boolean | null
+          is_shared: boolean | null
+          layout: Json | null
+          name: string
+          shared_with: string[] | null
+          type: Database["public"]["Enums"]["view_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          layout?: Json | null
+          name: string
+          shared_with?: string[] | null
+          type: Database["public"]["Enums"]["view_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          layout?: Json | null
+          name?: string
+          shared_with?: string[] | null
+          type?: Database["public"]["Enums"]["view_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_access_view: {
+        Args: { _user_id: string; _view_id: string }
+        Returns: boolean
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -416,6 +503,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "gestor" | "analista" | "visualizador"
+      view_type: "okr" | "dashboard"
+      widget_type:
+        | "metric_card"
+        | "okr_list"
+        | "sector_overview"
+        | "progress_chart"
+        | "quick_stats"
+        | "task_summary"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -544,6 +639,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "gestor", "analista", "visualizador"],
+      view_type: ["okr", "dashboard"],
+      widget_type: [
+        "metric_card",
+        "okr_list",
+        "sector_overview",
+        "progress_chart",
+        "quick_stats",
+        "task_summary",
+      ],
     },
   },
 } as const

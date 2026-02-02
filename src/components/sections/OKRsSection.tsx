@@ -1,20 +1,34 @@
-import { useSectors, useCycles, useObjectives, useArchivedObjectives, useUpdateObjective, useProfiles } from '@/hooks/useSupabaseData';
+import { useSectors, useCycles, useObjectives, useArchivedObjectives, useUpdateObjective } from '@/hooks/useSupabaseData';
+import { useUserViews, useDefaultView, useUpdateView } from '@/hooks/useViews';
 import { OKRCard } from '@/components/dashboard/OKRCard';
 import { NewOKRForm } from '@/components/okr/NewOKRForm';
 import { CycleManager } from '@/components/okr/CycleManager';
+import { ViewSelector } from '@/components/views/ViewSelector';
+import { SaveViewDialog } from '@/components/views/SaveViewDialog';
+import { ViewManager } from '@/components/views/ViewManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import type { OKRViewFilters, UserView } from '@/types/views';
 
 export function OKRsSection() {
   const { data: sectors = [], isLoading: sectorsLoading } = useSectors();
   const { data: cycles = [], isLoading: cyclesLoading } = useCycles();
   const { data: archivedObjectives = [] } = useArchivedObjectives();
+  const { data: defaultView } = useDefaultView('okr');
+  const updateView = useUpdateView();
   const updateObjective = useUpdateObjective();
 
+  // View state
+  const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Filter state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -23,18 +37,67 @@ export function OKRsSection() {
   const activeCycles = useMemo(() => cycles.filter(c => !c.is_archived), [cycles]);
   const archivedCycles = useMemo(() => cycles.filter(c => c.is_archived), [cycles]);
   
-  const [selectedCycleId, setSelectedCycleId] = useState<string>(() => {
-    const activeCycle = activeCycles.find(c => c.is_active);
-    return activeCycle?.id || '';
-  });
+  const [selectedCycleId, setSelectedCycleId] = useState<string>('');
 
-  // Update selectedCycleId when cycles load
-  useMemo(() => {
+  // Load default view on mount
+  useEffect(() => {
+    if (defaultView && !selectedViewId) {
+      applyViewFilters(defaultView);
+      setSelectedViewId(defaultView.id);
+    }
+  }, [defaultView]);
+
+  // Set default cycle when cycles load
+  useEffect(() => {
     if (activeCycles.length > 0 && !selectedCycleId) {
       const activeCycle = activeCycles.find(c => c.is_active);
       setSelectedCycleId(activeCycle?.id || activeCycles[0]?.id || '');
     }
   }, [activeCycles, selectedCycleId]);
+
+  // Apply filters from a saved view
+  const applyViewFilters = useCallback((view: UserView) => {
+    const filters = view.filters as OKRViewFilters;
+    if (filters.cycleId) setSelectedCycleId(filters.cycleId);
+    if (filters.status && filters.status.length === 1) {
+      setStatusFilter(filters.status[0]);
+    } else {
+      setStatusFilter('all');
+    }
+    if (filters.search !== undefined) setSearchTerm(filters.search);
+    if (filters.viewMode) setViewMode(filters.viewMode);
+    setHasUnsavedChanges(false);
+  }, []);
+
+  // Get current filters as object
+  const getCurrentFilters = useCallback((): OKRViewFilters => ({
+    cycleId: selectedCycleId,
+    status: statusFilter === 'all' ? [] : [statusFilter as OKRViewFilters['status'][0]],
+    search: searchTerm,
+    viewMode,
+  }), [selectedCycleId, statusFilter, searchTerm, viewMode]);
+
+  // Handle view selection
+  const handleSelectView = useCallback((view: UserView | null) => {
+    if (view) {
+      setSelectedViewId(view.id);
+      applyViewFilters(view);
+    } else {
+      setSelectedViewId(null);
+      // Reset to defaults
+      setStatusFilter('all');
+      setSearchTerm('');
+      setViewMode('grid');
+      setHasUnsavedChanges(false);
+    }
+  }, [applyViewFilters]);
+
+  // Track changes
+  const handleFilterChange = useCallback(() => {
+    if (selectedViewId) {
+      setHasUnsavedChanges(true);
+    }
+  }, [selectedViewId]);
 
   const { data: objectives = [], isLoading: objectivesLoading } = useObjectives(selectedCycleId);
 
@@ -149,55 +212,20 @@ export function OKRsSection() {
         </TabsList>
 
         <TabsContent value="ativos" className="mt-4 space-y-4">
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar OKRs..." 
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="on-track">No Prazo</SelectItem>
-                  <SelectItem value="attention">Atenção</SelectItem>
-                  <SelectItem value="critical">Crítico</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <div className="flex items-center border rounded-lg p-1">
-                <Button 
-                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-              <NewOKRForm />
-            </div>
-          </div>
-
-          {/* Cycle Selector */}
+          {/* View Selector Row */}
           <div className="flex items-center gap-3">
-            <Select value={selectedCycleId} onValueChange={setSelectedCycleId}>
+            <ViewSelector
+              type="okr"
+              selectedViewId={selectedViewId}
+              onSelectView={handleSelectView}
+              onSaveView={() => setSaveDialogOpen(true)}
+              onManageViews={() => setManagerOpen(true)}
+              hasUnsavedChanges={hasUnsavedChanges}
+            />
+            <Select value={selectedCycleId} onValueChange={(value) => {
+              setSelectedCycleId(value);
+              handleFilterChange();
+            }}>
               <SelectTrigger className="w-[220px]">
                 <SelectValue placeholder="Selecione o período" />
               </SelectTrigger>
@@ -215,6 +243,64 @@ export function OKRsSection() {
               </SelectContent>
             </Select>
             <CycleManager />
+          </div>
+
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar OKRs..." 
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    handleFilterChange();
+                  }}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={(value) => {
+                setStatusFilter(value);
+                handleFilterChange();
+              }}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="on-track">No Prazo</SelectItem>
+                  <SelectItem value="attention">Atenção</SelectItem>
+                  <SelectItem value="critical">Crítico</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center border rounded-lg p-1">
+                <Button 
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('grid');
+                    handleFilterChange();
+                  }}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('list');
+                    handleFilterChange();
+                  }}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+              <NewOKRForm />
+            </div>
           </div>
 
           {/* OKRs Content */}
@@ -338,6 +424,22 @@ export function OKRsSection() {
           </span>
         </div>
       )}
+
+      {/* Dialogs */}
+      <SaveViewDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        type="okr"
+        filters={getCurrentFilters()}
+        onSuccess={() => setHasUnsavedChanges(false)}
+      />
+
+      <ViewManager
+        open={managerOpen}
+        onOpenChange={setManagerOpen}
+        type="okr"
+        onSelectView={handleSelectView}
+      />
     </div>
   );
 }
