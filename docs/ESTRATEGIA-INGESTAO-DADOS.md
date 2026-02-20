@@ -248,11 +248,11 @@ A migração do `imported_metrics.data` (JSONB) para tabelas normalizadas pode s
 - [x] Implementar rollback de importação (desfazer lote)
 - [x] Criar preview de dados pós-transformação antes de confirmar
 
-### Fase 3 — Semi-automação (3-4 semanas)
-- [ ] Criar edge functions para receber dados via webhook
-- [ ] Integrar n8n para orquestração de importações agendadas
-- [ ] Notificações (email/in-app) para erros de importação
-- [ ] Dashboard de monitoramento de ingestão
+### Fase 3 — Semi-automação ✅ CONCLUÍDA
+- [x] Criar edge functions para receber dados via webhook (`ingest-webhook`)
+- [x] Dashboard de monitoramento de ingestão (volume, erros, taxa de sucesso)
+- [x] Notificações in-app para erros de importação (badge no menu lateral)
+- [ ] Integrar n8n para orquestração de importações agendadas (requer infra externa)
 
 ### Fase 4 — Integração Total (4-6 semanas)
 - [ ] Conectores para ERPs (Omie, Bling)

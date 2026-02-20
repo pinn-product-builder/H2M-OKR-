@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -9,8 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
-  Building2
+  Building2,
+  AlertCircle
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SidebarProps {
   currentSection: string;
@@ -31,6 +33,22 @@ const systemItems = [
 
 export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [importErrorCount, setImportErrorCount] = useState(0);
+
+  // Check for recent import errors
+  useEffect(() => {
+    async function checkErrors() {
+      const { count } = await supabase
+        .from('import_logs')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['error', 'partial'])
+        .gte('started_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      setImportErrorCount(count || 0);
+    }
+    checkErrors();
+    const interval = setInterval(checkErrors, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside 
@@ -84,6 +102,15 @@ export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {
                   )}>
                     {item.label}
                   </span>
+                  {/* Error badge for datasource */}
+                  {item.id === 'datasource' && importErrorCount > 0 && (
+                    <span className={cn(
+                      "flex items-center justify-center rounded-full bg-critical text-critical-foreground text-[10px] font-bold min-w-[18px] h-[18px] px-1",
+                      collapsed ? "absolute top-0 right-0" : "ml-auto"
+                    )}>
+                      {importErrorCount > 9 ? '9+' : importErrorCount}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}
