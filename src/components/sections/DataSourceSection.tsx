@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ImportWizard } from '@/components/data/ImportWizard';
 import { ImportLogViewer } from '@/components/data/ImportLogViewer';
+import { ImportMonitorDashboard } from '@/components/data/ImportMonitorDashboard';
 import { NewSourceWithMapping } from '@/components/data/NewSourceWithMapping';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -30,7 +31,8 @@ import {
   Table as TableIcon,
   Download,
   Lock,
-  History
+  History,
+  Activity
 } from 'lucide-react';
 
 interface DataMapping {
@@ -198,6 +200,10 @@ export function DataSourceSection() {
             <History className="w-4 h-4 mr-2" />
             Logs ({stats.total})
           </TabsTrigger>
+          <TabsTrigger value="monitor" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Activity className="w-4 h-4 mr-2" />
+            Monitoramento
+          </TabsTrigger>
         </TabsList>
 
         {/* Planilhas */}
@@ -337,6 +343,11 @@ export function DataSourceSection() {
             } : undefined}
             stats={stats}
           />
+        </TabsContent>
+
+        {/* Monitoramento */}
+        <TabsContent value="monitor" className="mt-6">
+          <ImportMonitorDashboard logs={logs} />
         </TabsContent>
       </Tabs>
 
