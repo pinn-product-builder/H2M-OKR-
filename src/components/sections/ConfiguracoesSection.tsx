@@ -7,39 +7,11 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Database, Bell, Shield, CheckCircle2, Download, Loader2 } from 'lucide-react';
+import { Building2, Database, Bell, Shield, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SectorManager } from '@/components/settings/SectorManager';
 import { toast } from '@/hooks/use-toast';
 
-const TEMPLATE_COLUMNS: Record<string, string[]> = {
-  'Faturamento': ['data', 'cliente', 'produto', 'quantidade', 'valor_unitario', 'valor_total', 'regiao'],
-  'Custos Operacionais': ['data', 'categoria', 'descricao', 'valor', 'centro_custo', 'tipo'],
-  'Estoque': ['data', 'produto', 'sku', 'quantidade', 'valor_unitario', 'localizacao', 'lote'],
-  'Metas OKR': ['objetivo', 'key_result', 'tipo', 'meta', 'baseline', 'unidade', 'responsavel', 'setor'],
-  'Leads Marketing': ['data', 'nome', 'email', 'telefone', 'origem', 'status', 'valor_estimado'],
-};
-
-function generateCSVTemplate(templateName: string): string {
-  const columns = TEMPLATE_COLUMNS[templateName] || ['coluna1', 'coluna2', 'coluna3'];
-  const header = columns.join(';');
-  const exampleRow = columns.map(() => '').join(';');
-  return `${header}\n${exampleRow}\n`;
-}
-
-function downloadTemplate(templateName: string) {
-  const csv = generateCSVTemplate(templateName);
-  const bom = '\uFEFF';
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `template_${templateName.toLowerCase().replace(/\s+/g, '_')}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
 
 export function ConfiguracoesSection() {
   const { user } = useAuth();
@@ -90,14 +62,6 @@ export function ConfiguracoesSection() {
     toast({
       title: 'Configurações salvas',
       description: 'As configurações de importação foram atualizadas.',
-    });
-  };
-
-  const handleDownloadTemplate = (templateName: string) => {
-    downloadTemplate(templateName);
-    toast({
-      title: 'Download iniciado',
-      description: `Template "${templateName}" baixado com sucesso.`,
     });
   };
 
@@ -274,33 +238,6 @@ export function ConfiguracoesSection() {
             </CardContent>
           </Card>
 
-          <Card className="card-elevated">
-            <CardHeader>
-              <CardTitle className="text-base">Templates de Importação</CardTitle>
-              <CardDescription>Baixe os modelos padronizados para cada tipo de dado</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-3">
-                {Object.keys(TEMPLATE_COLUMNS).map((template) => (
-                  <Button
-                    key={template}
-                    variant="outline"
-                    className="justify-start h-auto py-3"
-                    onClick={() => handleDownloadTemplate(template)}
-                  >
-                    <Download className="w-4 h-4 mr-3 flex-shrink-0" />
-                    <div className="text-left">
-                      <div className="font-medium">{template}</div>
-                      <div className="text-xs text-muted-foreground">template_{template.toLowerCase().replace(/\s+/g, '_')}.csv</div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Use estes templates para garantir que seus dados sejam importados corretamente.
-              </p>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="notificacoes" className="mt-6 space-y-6">

@@ -13,6 +13,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   currentSection: string;
@@ -20,10 +21,9 @@ interface SidebarProps {
 }
 
 const mainNavItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'okrs', label: 'OKRs', icon: Target },
-  // { id: 'indicadores', label: 'Indicadores', icon: BarChart3 }, // Temporariamente oculto
-  { id: 'datasource', label: 'Data Source', icon: Database },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
+  { id: 'okrs', label: 'OKRs', icon: Target, adminOnly: false },
+  { id: 'datasource', label: 'Data Source', icon: Database, adminOnly: true },
 ];
 
 const systemItems = [
@@ -32,6 +32,8 @@ const systemItems = [
 ];
 
 export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [collapsed, setCollapsed] = useState(false);
   const [importErrorCount, setImportErrorCount] = useState(0);
 
@@ -82,7 +84,9 @@ export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {
             <p className="section-title px-3 text-sidebar-foreground/50 mb-2">Principal</p>
           )}
           <ul className="space-y-1">
-            {mainNavItems.map((item) => (
+            {mainNavItems
+              .filter(item => !item.adminOnly || isAdmin)
+              .map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => onSectionChange(item.id)}
@@ -100,7 +104,6 @@ export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {
                   )}>
                     {item.label}
                   </span>
-                  {/* Error badge for datasource */}
                   {item.id === 'datasource' && importErrorCount > 0 && (
                     <span className={cn(
                       "flex items-center justify-center rounded-full bg-critical text-critical-foreground text-[10px] font-bold min-w-[18px] h-[18px] px-1",

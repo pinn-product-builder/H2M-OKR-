@@ -3,10 +3,10 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { OKRsSection } from '@/components/sections/OKRsSection';
-import { IndicadoresSection } from '@/components/sections/IndicadoresSection';
 import { UsuariosSection } from '@/components/sections/UsuariosSection';
 import { ConfiguracoesSection } from '@/components/sections/ConfiguracoesSection';
 import { DataSourceSection } from '@/components/sections/DataSourceSection';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -19,8 +19,18 @@ const sectionTitles: Record<string, { title: string; subtitle: string }> = {
 };
 
 const Index = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const handleSectionChange = useCallback((section: string) => {
+    if (section === 'datasource' && !isAdmin) {
+      toast({ title: 'Acesso restrito', description: 'Data Source é disponível apenas para administradores.' });
+      return;
+    }
+    setCurrentSection(section);
+  }, [isAdmin]);
 
   const { title, subtitle } = sectionTitles[currentSection] || sectionTitles.dashboard;
 
@@ -36,19 +46,19 @@ const Index = () => {
     <div className="min-h-screen bg-background flex w-full">
       <Sidebar 
         currentSection={currentSection} 
-        onSectionChange={setCurrentSection}
+        onSectionChange={handleSectionChange}
       />
       
       <main className={cn(
         "flex-1 transition-all duration-300",
         "ml-64"
       )}>
-        <Header title={title} subtitle={subtitle} onSearch={handleSearch} onNavigate={setCurrentSection} />
+        <Header title={title} subtitle={subtitle} onSearch={handleSearch} onNavigate={handleSectionChange} />
         
         <div className="p-6">
           {currentSection === 'dashboard' && <Dashboard />}
           {currentSection === 'okrs' && <OKRsSection />}
-          {currentSection === 'datasource' && <DataSourceSection />}
+          {currentSection === 'datasource' && isAdmin && <DataSourceSection />}
           {currentSection === 'usuarios' && <UsuariosSection />}
           {currentSection === 'configuracoes' && <ConfiguracoesSection />}
         </div>
