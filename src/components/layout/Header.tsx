@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Bell, Search, User, LogOut, Sun, Moon, ChevronRight } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Bell, Search, User, LogOut, Sun, Moon, ChevronRight, X, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { toast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,11 +22,22 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-const MOCK_NOTIFICATIONS = [
-  { id: '1', title: 'OKR "Aumentar faturamento" atingiu 75%', time: 'Há 2 horas', read: false },
-  { id: '2', title: 'Checkpoint de Q1 2026 em 2 dias', time: 'Há 5 horas', read: false },
-  { id: '3', title: 'Novo ciclo Q2 2026 disponível', time: 'Há 1 dia', read: true },
-  { id: '4', title: 'KR "Leads qualificados" atualizado', time: 'Há 2 dias', read: true },
+export interface Notification {
+  id: string;
+  title: string;
+  description?: string;
+  time: string;
+  read: boolean;
+  section?: string;
+}
+
+const INITIAL_NOTIFICATIONS: Notification[] = [
+  { id: '1', title: 'OKR "Aumentar faturamento" atingiu 75%', description: 'O objetivo está no caminho certo para atingir a meta.', time: 'Há 2 horas', read: false, section: 'okrs' },
+  { id: '2', title: 'Checkpoint de Q1 2026 em 2 dias', description: 'Prepare os dados para a revisão trimestral.', time: 'Há 5 horas', read: false, section: 'dashboard' },
+  { id: '3', title: 'Novo ciclo Q2 2026 disponível', description: 'Configure os novos objetivos para o próximo trimestre.', time: 'Há 1 dia', read: true, section: 'okrs' },
+  { id: '4', title: 'KR "Leads qualificados" atualizado', description: 'Valor atual: 340 de 500 leads.', time: 'Há 2 dias', read: true, section: 'okrs' },
+  { id: '5', title: 'Importação de dados concluída', description: '1.250 registros importados com sucesso.', time: 'Há 3 dias', read: true, section: 'datasource' },
+  { id: '6', title: 'Novo usuário cadastrado', description: 'Maria Silva foi adicionada ao sistema.', time: 'Há 4 dias', read: true, section: 'usuarios' },
 ];
 
 interface HeaderProps {
@@ -33,13 +45,15 @@ interface HeaderProps {
   subtitle?: string;
   breadcrumbs?: { label: string; href?: string }[];
   onSearch?: (term: string) => void;
+  onNavigate?: (section: string) => void;
 }
 
-export function Header({ title, subtitle, breadcrumbs, onSearch }: HeaderProps) {
+export function Header({ title, subtitle, breadcrumbs, onSearch, onNavigate }: HeaderProps) {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [searchValue, setSearchValue] = useState('');
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [isOpen, setIsOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -50,9 +64,38 @@ export function Header({ title, subtitle, breadcrumbs, onSearch }: HeaderProps) 
     }
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+    toast({ title: 'Notificações', description: 'Todas marcadas como lidas.' });
+  }, []);
+
+  const handleMarkRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const handleDismiss = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    toast({ title: 'Notificação removida', description: 'A notificação foi descartada.' });
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    setNotifications([]);
+    toast({ title: 'Notificações limpas', description: 'Todas as notificações foram removidas.' });
+  }, []);
+
+  const handleNotificationClick = useCallback((notif: Notification) => {
+    handleMarkRead(notif.id);
+    if (notif.section && onNavigate) {
+      onNavigate(notif.section);
+      toast({
+        title: notif.title,
+        description: `Navegando para ${notif.section === 'okrs' ? 'OKRs' : notif.section === 'datasource' ? 'Data Source' : notif.section === 'usuarios' ? 'Usuários' : 'Dashboard'}`,
+      });
+    }
+    setIsOpen(false);
+  }, [handleMarkRead, onNavigate]);
 
   return (
     <header className="h-16 border-b border-border glass flex items-center justify-between px-6 sticky top-0 z-40">
@@ -101,7 +144,7 @@ export function Header({ title, subtitle, breadcrumbs, onSearch }: HeaderProps) 
         </form>
 
         {/* Notifications */}
-        <DropdownMenu>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9">
               <Bell className="w-5 h-5" />
@@ -112,40 +155,69 @@ export function Header({ title, subtitle, breadcrumbs, onSearch }: HeaderProps) 
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-96">
             <DropdownMenuLabel className="flex items-center justify-between">
-              <span>Notificações</span>
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="text-xs text-primary hover:underline font-normal"
-                >
-                  Marcar todas como lidas
-                </button>
-              )}
+              <span className="font-semibold">Notificações</span>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-primary hover:underline font-normal flex items-center gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    Marcar todas como lidas
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={handleClearAll}
+                    className="text-xs text-muted-foreground hover:text-destructive hover:underline font-normal flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Limpar
+                  </button>
+                )}
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.length === 0 ? (
-              <div className="py-4 text-center text-sm text-muted-foreground">
-                Nenhuma notificação
-              </div>
-            ) : (
-              notifications.map((notif) => (
-                <DropdownMenuItem
-                  key={notif.id}
-                  className="flex flex-col items-start gap-1 py-3 cursor-pointer"
-                  onClick={() => setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))}
-                >
-                  <div className="flex items-start gap-2 w-full">
-                    {!notif.read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />}
-                    <div className={cn("flex-1", notif.read && "ml-4")}>
-                      <p className={cn("text-sm", !notif.read && "font-medium")}>{notif.title}</p>
-                      <p className="text-xs text-muted-foreground">{notif.time}</p>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>Nenhuma notificação</p>
+                  <p className="text-xs mt-1">Você está em dia!</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <DropdownMenuItem
+                    key={notif.id}
+                    className={cn(
+                      "flex items-start gap-2 py-3 px-3 cursor-pointer group",
+                      !notif.read && "bg-primary/5"
+                    )}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      {!notif.read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />}
+                      <div className={cn("flex-1 min-w-0", notif.read && "ml-4")}>
+                        <p className={cn("text-sm leading-tight", !notif.read && "font-medium")}>{notif.title}</p>
+                        {notif.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.description}</p>
+                        )}
+                        <p className="text-[11px] text-muted-foreground/70 mt-1">{notif.time}</p>
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuItem>
-              ))
-            )}
+                    <button
+                      onClick={(e) => handleDismiss(e, notif.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded flex-shrink-0"
+                      title="Remover notificação"
+                    >
+                      <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                    </button>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
 

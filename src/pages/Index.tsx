@@ -43,7 +43,7 @@ const Index = () => {
         "flex-1 transition-all duration-300",
         "ml-64"
       )}>
-        <Header title={title} subtitle={subtitle} onSearch={handleSearch} />
+        <Header title={title} subtitle={subtitle} onSearch={handleSearch} onNavigate={setCurrentSection} />
         
         <div className="p-6">
           {currentSection === 'dashboard' && <Dashboard />}

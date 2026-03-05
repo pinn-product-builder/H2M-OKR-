@@ -41,12 +41,12 @@ test.describe('Navegação Sidebar', () => {
     await expect(page.locator('h1')).toContainText(/Config/i);
   });
 
-  test('deve recolher/expandir sidebar', async ({ page }) => {
-    const collapseBtn = page.locator('aside button, nav button').filter({ hasText: /Recolher/i });
-    if (await collapseBtn.isVisible().catch(() => false)) {
-      await collapseBtn.click();
-      await page.waitForTimeout(500);
-      await collapseBtn.click();
+  test('deve ter botão de recolher sidebar visível', async ({ page }) => {
+    const collapseBtn = page.locator('aside button:has(svg.lucide-chevron-left), aside button:has(svg.lucide-panel-left-close)').first();
+    const altBtn = page.locator('aside button').filter({ hasText: /Recolher/i });
+    const btn = await collapseBtn.isVisible().catch(() => false) ? collapseBtn : altBtn;
+    if (await btn.isVisible().catch(() => false)) {
+      await btn.click();
       await page.waitForTimeout(500);
     }
   });

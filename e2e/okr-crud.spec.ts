@@ -13,8 +13,8 @@ test.describe('OKR - Seção Completa', () => {
     await expect(page.locator('button[role="tab"]').filter({ hasText: 'Histórico' })).toBeVisible();
   });
 
-  test('deve ter campo de busca de OKRs', async ({ page }) => {
-    const searchInput = page.locator('input[placeholder*="Buscar OKR"]');
+  test('deve ter campo de busca de OKRs na seção', async ({ page }) => {
+    const searchInput = page.locator('input[placeholder="Buscar OKRs..."]');
     await expect(searchInput).toBeVisible();
     await searchInput.fill('faturamento');
     await page.waitForTimeout(500);

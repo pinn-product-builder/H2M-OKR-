@@ -77,9 +77,7 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <Building2 className="w-6 h-6" />
-            </div>
+            <img src="/logo.png" alt="H2M" className="w-12 h-12 rounded-xl object-contain bg-white/20 backdrop-blur p-1" />
             <div>
               <h1 className="font-bold text-xl">H2M Intelligence</h1>
               <p className="text-sm text-white/70">Sistema de Gestão OKRs</p>
@@ -126,9 +124,7 @@ export default function Login() {
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-14 h-14 rounded-2xl gradient-accent flex items-center justify-center shadow-lg">
-              <Building2 className="w-7 h-7 text-accent-foreground" />
-            </div>
+            <img src="/logo.png" alt="H2M" className="w-14 h-14 rounded-2xl object-contain shadow-lg" />
           </div>
 
           <Card className="border-border/50 shadow-xl">

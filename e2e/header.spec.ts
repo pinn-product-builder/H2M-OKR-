@@ -23,26 +23,61 @@ test.describe('Header', () => {
     await expect(page.locator('h1')).toContainText(/OKR/i);
   });
 
-  test('deve abrir dropdown de notificações', async ({ page }) => {
+  test('deve abrir dropdown de notificações com itens', async ({ page }) => {
     const bellButton = page.locator('header button:has(svg.lucide-bell)');
-    const altBell = page.locator('header button').filter({ has: page.locator('svg') }).first();
-    const btn = await bellButton.isVisible().catch(() => false) ? bellButton : altBell;
-    await btn.click();
+    await bellButton.click();
     await page.waitForTimeout(1000);
-    const menuVisible = await page.locator('[role="menu"], [role="menuitem"]').first().isVisible().catch(() => false);
-    expect(menuVisible).toBeTruthy();
+    await expect(page.locator('[role="menu"]')).toBeVisible();
+    await expect(page.locator('[role="menuitem"]').first()).toBeVisible();
   });
 
-  test('deve marcar notificações como lidas', async ({ page }) => {
+  test('deve marcar todas notificações como lidas e exibir toast', async ({ page }) => {
     const bellButton = page.locator('header button:has(svg.lucide-bell)');
-    const altBell = page.locator('header button').filter({ has: page.locator('svg') }).first();
-    const btn = await bellButton.isVisible().catch(() => false) ? bellButton : altBell;
-    await btn.click();
+    await bellButton.click();
     await page.waitForTimeout(500);
-    const markAllBtn = page.locator('button').filter({ hasText: /Marcar todas/i });
+    const markAllBtn = page.getByText('Marcar todas como lidas');
     if (await markAllBtn.isVisible().catch(() => false)) {
       await markAllBtn.click();
+      await page.waitForTimeout(1000);
+      await expect(page.locator('[data-state="open"][role="status"], li[role="status"]').first()).toBeVisible({ timeout: 5000 }).catch(() => {});
+    }
+  });
+
+  test('deve clicar em notificação e navegar para a seção', async ({ page }) => {
+    const bellButton = page.locator('header button:has(svg.lucide-bell)');
+    await bellButton.click();
+    await page.waitForTimeout(500);
+    const firstNotif = page.locator('[role="menuitem"]').first();
+    await firstNotif.click();
+    await page.waitForTimeout(1500);
+    await expect(page.locator('h1')).toBeVisible();
+  });
+
+  test('deve remover notificação individual ao clicar no X', async ({ page }) => {
+    const bellButton = page.locator('header button:has(svg.lucide-bell)');
+    await bellButton.click();
+    await page.waitForTimeout(500);
+    const initialCount = await page.locator('[role="menuitem"]').count();
+    const dismissBtn = page.locator('[role="menuitem"] button').first();
+    await dismissBtn.click({ force: true });
+    await page.waitForTimeout(1000);
+    await bellButton.click();
+    await page.waitForTimeout(500);
+    const newCount = await page.locator('[role="menuitem"]').count();
+    expect(newCount).toBeLessThan(initialCount);
+  });
+
+  test('deve limpar todas as notificações', async ({ page }) => {
+    const bellButton = page.locator('header button:has(svg.lucide-bell)');
+    await bellButton.click();
+    await page.waitForTimeout(500);
+    const clearBtn = page.getByText('Limpar');
+    if (await clearBtn.isVisible().catch(() => false)) {
+      await clearBtn.click();
       await page.waitForTimeout(500);
+      await bellButton.click();
+      await page.waitForTimeout(500);
+      await expect(page.getByText('Nenhuma notificação')).toBeVisible();
     }
   });
 

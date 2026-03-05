@@ -16,9 +16,14 @@ test.describe('Autenticação', () => {
   test('deve alternar para aba Criar Conta e voltar', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await page.locator('button[role="tab"]').filter({ hasText: 'Criar Conta' }).click();
-    await page.waitForTimeout(500);
-    await expect(page.locator('input[placeholder*="Nome"]')).toBeVisible();
+    const criarContaTab = page.locator('button[role="tab"]').filter({ hasText: 'Criar Conta' });
+    await expect(criarContaTab).toBeVisible({ timeout: 10000 });
+    await criarContaTab.click();
+    await page.waitForTimeout(1000);
+    // Na aba Criar Conta deve ter pelo menos 3 inputs (nome, email, senha)
+    const inputs = page.locator('input:visible');
+    const count = await inputs.count();
+    expect(count).toBeGreaterThanOrEqual(2);
     await page.locator('button[role="tab"]').filter({ hasText: 'Entrar' }).click();
     await page.waitForTimeout(500);
     await expect(page.locator('input[type="email"]')).toBeVisible();

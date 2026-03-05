@@ -10,7 +10,7 @@ export default defineConfig({
   timeout: 30000,
 
   use: {
-    baseURL: 'http://187.77.232.157',
+    baseURL: 'http://31.97.174.112:8081',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

@@ -172,7 +172,7 @@ test.describe('Configurações - Completo', () => {
 
     await dialog.locator('button').filter({ hasText: 'Criar Setor' }).click();
     await page.waitForTimeout(3000);
-    await expect(page.locator('text=Setor Teste E2E')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('p.font-medium').filter({ hasText: 'Setor Teste E2E' }).first()).toBeVisible({ timeout: 5000 });
   });
 
   test('deve editar setor existente', async ({ page }) => {
@@ -191,7 +191,7 @@ test.describe('Configurações - Completo', () => {
       await input.fill('Setor Renomeado E2E');
       await dialog.locator('button').filter({ hasText: 'Salvar' }).click();
       await page.waitForTimeout(3000);
-      await expect(page.locator('text=Setor Renomeado E2E')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('p.font-medium').filter({ hasText: 'Setor Renomeado E2E' }).first()).toBeVisible({ timeout: 5000 });
     }
   });
 
