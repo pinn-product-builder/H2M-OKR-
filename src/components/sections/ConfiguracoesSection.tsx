@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +7,131 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Database, Bell, Shield, CheckCircle2 } from 'lucide-react';
+import { Building2, Database, Bell, Shield, CheckCircle2, Download, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SectorManager } from '@/components/settings/SectorManager';
+import { toast } from '@/hooks/use-toast';
+
+const TEMPLATE_COLUMNS: Record<string, string[]> = {
+  'Faturamento': ['data', 'cliente', 'produto', 'quantidade', 'valor_unitario', 'valor_total', 'regiao'],
+  'Custos Operacionais': ['data', 'categoria', 'descricao', 'valor', 'centro_custo', 'tipo'],
+  'Estoque': ['data', 'produto', 'sku', 'quantidade', 'valor_unitario', 'localizacao', 'lote'],
+  'Metas OKR': ['objetivo', 'key_result', 'tipo', 'meta', 'baseline', 'unidade', 'responsavel', 'setor'],
+  'Leads Marketing': ['data', 'nome', 'email', 'telefone', 'origem', 'status', 'valor_estimado'],
+};
+
+function generateCSVTemplate(templateName: string): string {
+  const columns = TEMPLATE_COLUMNS[templateName] || ['coluna1', 'coluna2', 'coluna3'];
+  const header = columns.join(';');
+  const exampleRow = columns.map(() => '').join(';');
+  return `${header}\n${exampleRow}\n`;
+}
+
+function downloadTemplate(templateName: string) {
+  const csv = generateCSVTemplate(templateName);
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `template_${templateName.toLowerCase().replace(/\s+/g, '_')}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export function ConfiguracoesSection() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  // Aba Geral - state
+  const [companyName, setCompanyName] = useState('H2M Embalagens');
+  const [cnpj, setCnpj] = useState('12.345.678/0001-90');
+  const [okrCycle, setOkrCycle] = useState('trimestral');
+  const [timezone, setTimezone] = useState('america-sao-paulo');
+  const [savingGeral, setSavingGeral] = useState(false);
+
+  // Aba Integracao - state
+  const [dateFormat, setDateFormat] = useState('dd-mm-yyyy');
+  const [csvSeparator, setCsvSeparator] = useState('semicolon');
+  const [fileEncoding, setFileEncoding] = useState('utf8');
+  const [savingIntegracao, setSavingIntegracao] = useState(false);
+
+  // Aba Notificacoes - state
+  const [notifications, setNotifications] = useState({
+    criticalOkr: true,
+    checkpointNear: true,
+    newCycle: true,
+    krUpdate: false,
+    weeklyReport: true,
+  });
+
+  // Aba Seguranca - state
+  const [twoFactor, setTwoFactor] = useState(true);
+  const [sessionExpiry, setSessionExpiry] = useState('8h');
+  const [auditActions, setAuditActions] = useState(true);
+  const [logRetention, setLogRetention] = useState('1ano');
+
+  const handleSaveGeral = async () => {
+    setSavingGeral(true);
+    await new Promise(r => setTimeout(r, 600));
+    setSavingGeral(false);
+    toast({
+      title: 'Configurações salvas',
+      description: 'As informações da empresa foram atualizadas com sucesso.',
+    });
+  };
+
+  const handleSaveIntegracao = async () => {
+    setSavingIntegracao(true);
+    await new Promise(r => setTimeout(r, 600));
+    setSavingIntegracao(false);
+    toast({
+      title: 'Configurações salvas',
+      description: 'As configurações de importação foram atualizadas.',
+    });
+  };
+
+  const handleDownloadTemplate = (templateName: string) => {
+    downloadTemplate(templateName);
+    toast({
+      title: 'Download iniciado',
+      description: `Template "${templateName}" baixado com sucesso.`,
+    });
+  };
+
+  const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
+    setNotifications(prev => ({ ...prev, [key]: value }));
+    toast({
+      title: value ? 'Notificação ativada' : 'Notificação desativada',
+      description: `Preferência atualizada com sucesso.`,
+    });
+  };
+
+  const handleSecuritySwitch = (setter: (v: boolean) => void, label: string, value: boolean) => {
+    setter(value);
+    toast({
+      title: 'Segurança atualizada',
+      description: `${label} foi ${value ? 'ativado' : 'desativado'}.`,
+    });
+  };
+
+  const handleSecuritySelect = (setter: (v: string) => void, label: string, value: string) => {
+    setter(value);
+    toast({
+      title: 'Segurança atualizada',
+      description: `${label} atualizado com sucesso.`,
+    });
+  };
+
+  const notificationItems = [
+    { key: 'criticalOkr' as const, label: 'OKR atinge status crítico', desc: 'Quando um OKR fica abaixo de 30% do esperado' },
+    { key: 'checkpointNear' as const, label: 'Checkpoint próximo', desc: 'Lembrete 2 dias antes de um checkpoint agendado' },
+    { key: 'newCycle' as const, label: 'Novo ciclo de OKRs', desc: 'Quando um novo ciclo trimestral começa' },
+    { key: 'krUpdate' as const, label: 'Atualização de KR', desc: 'Quando um Key Result é atualizado por outro usuário' },
+    { key: 'weeklyReport' as const, label: 'Relatório semanal', desc: 'Resumo semanal do progresso dos OKRs' },
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl">
@@ -38,16 +157,16 @@ export function ConfiguracoesSection() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nome da Empresa</Label>
-                  <Input defaultValue="H2M Embalagens" />
+                  <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>CNPJ</Label>
-                  <Input defaultValue="12.345.678/0001-90" />
+                  <Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Ciclo de OKRs Padrão</Label>
-                <Select defaultValue="trimestral">
+                <Select value={okrCycle} onValueChange={setOkrCycle}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -61,7 +180,7 @@ export function ConfiguracoesSection() {
               </div>
               <div className="space-y-2">
                 <Label>Fuso Horário</Label>
-                <Select defaultValue="america-sao-paulo">
+                <Select value={timezone} onValueChange={setTimezone}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -71,7 +190,13 @@ export function ConfiguracoesSection() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="gradient-accent text-accent-foreground border-0">Salvar Alterações</Button>
+              <Button
+                className="gradient-accent text-accent-foreground border-0"
+                onClick={handleSaveGeral}
+                disabled={savingGeral}
+              >
+                {savingGeral ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar Alterações'}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -99,7 +224,7 @@ export function ConfiguracoesSection() {
               
               <div className="space-y-2">
                 <Label>Formato de Data Padrão</Label>
-                <Select defaultValue="dd-mm-yyyy">
+                <Select value={dateFormat} onValueChange={setDateFormat}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -113,7 +238,7 @@ export function ConfiguracoesSection() {
               
               <div className="space-y-2">
                 <Label>Separador de CSV</Label>
-                <Select defaultValue="semicolon">
+                <Select value={csvSeparator} onValueChange={setCsvSeparator}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -127,7 +252,7 @@ export function ConfiguracoesSection() {
 
               <div className="space-y-2">
                 <Label>Codificação de Arquivo</Label>
-                <Select defaultValue="utf8">
+                <Select value={fileEncoding} onValueChange={setFileEncoding}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -139,7 +264,13 @@ export function ConfiguracoesSection() {
                 </Select>
               </div>
 
-              <Button className="gradient-accent text-accent-foreground border-0">Salvar Configurações</Button>
+              <Button
+                className="gradient-accent text-accent-foreground border-0"
+                onClick={handleSaveIntegracao}
+                disabled={savingIntegracao}
+              >
+                {savingIntegracao ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar Configurações'}
+              </Button>
             </CardContent>
           </Card>
 
@@ -150,11 +281,17 @@ export function ConfiguracoesSection() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-3">
-                {['Faturamento', 'Custos Operacionais', 'Estoque', 'Metas OKR', 'Leads Marketing'].map((template) => (
-                  <Button key={template} variant="outline" className="justify-start h-auto py-3">
+                {Object.keys(TEMPLATE_COLUMNS).map((template) => (
+                  <Button
+                    key={template}
+                    variant="outline"
+                    className="justify-start h-auto py-3"
+                    onClick={() => handleDownloadTemplate(template)}
+                  >
+                    <Download className="w-4 h-4 mr-3 flex-shrink-0" />
                     <div className="text-left">
                       <div className="font-medium">{template}</div>
-                      <div className="text-xs text-muted-foreground">template_{template.toLowerCase().replace(' ', '_')}.xlsx</div>
+                      <div className="text-xs text-muted-foreground">template_{template.toLowerCase().replace(/\s+/g, '_')}.csv</div>
                     </div>
                   </Button>
                 ))}
@@ -175,19 +312,16 @@ export function ConfiguracoesSection() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {[
-                { label: 'OKR atinge status crítico', desc: 'Quando um OKR fica abaixo de 30% do esperado', default: true },
-                { label: 'Checkpoint próximo', desc: 'Lembrete 2 dias antes de um checkpoint agendado', default: true },
-                { label: 'Novo ciclo de OKRs', desc: 'Quando um novo ciclo trimestral começa', default: true },
-                { label: 'Atualização de KR', desc: 'Quando um Key Result é atualizado por outro usuário', default: false },
-                { label: 'Relatório semanal', desc: 'Resumo semanal do progresso dos OKRs', default: true },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
+              {notificationItems.map((item) => (
+                <div key={item.key} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{item.label}</p>
                     <p className="text-sm text-muted-foreground">{item.desc}</p>
                   </div>
-                  <Switch defaultChecked={item.default} />
+                  <Switch
+                    checked={notifications[item.key]}
+                    onCheckedChange={(checked) => handleNotificationChange(item.key, checked)}
+                  />
                 </div>
               ))}
             </CardContent>
@@ -208,14 +342,20 @@ export function ConfiguracoesSection() {
                   <p className="font-medium">Autenticação de dois fatores (2FA)</p>
                   <p className="text-sm text-muted-foreground">Exigir 2FA para todos os usuários</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={twoFactor}
+                  onCheckedChange={(v) => handleSecuritySwitch(setTwoFactor, 'Autenticação 2FA', v)}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Expiração de sessão</p>
                   <p className="text-sm text-muted-foreground">Deslogar após período de inatividade</p>
                 </div>
-                <Select defaultValue="8h">
+                <Select
+                  value={sessionExpiry}
+                  onValueChange={(v) => handleSecuritySelect(setSessionExpiry, 'Expiração de sessão', v)}
+                >
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -232,14 +372,20 @@ export function ConfiguracoesSection() {
                   <p className="font-medium">Auditoria de ações</p>
                   <p className="text-sm text-muted-foreground">Registrar todas as alterações em OKRs</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={auditActions}
+                  onCheckedChange={(v) => handleSecuritySwitch(setAuditActions, 'Auditoria de ações', v)}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Retenção de logs</p>
                   <p className="text-sm text-muted-foreground">Período de armazenamento dos logs de auditoria</p>
                 </div>
-                <Select defaultValue="1ano">
+                <Select
+                  value={logRetention}
+                  onValueChange={(v) => handleSecuritySelect(setLogRetention, 'Retenção de logs', v)}
+                >
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>

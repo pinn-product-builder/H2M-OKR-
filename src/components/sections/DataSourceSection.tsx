@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ImportWizard } from '@/components/data/ImportWizard';
 import { ImportLogViewer } from '@/components/data/ImportLogViewer';
 import { ImportMonitorDashboard } from '@/components/data/ImportMonitorDashboard';
@@ -43,7 +43,7 @@ interface DataMapping {
   status: 'active' | 'inactive';
 }
 
-const mockMappings: DataMapping[] = [
+const INITIAL_MAPPINGS: DataMapping[] = [
   { id: '1', sourceField: 'faturamento.valor_total', targetMetric: 'Faturamento Mensal', transformation: 'SUM', status: 'active' },
   { id: '2', sourceField: 'custos.valor', targetMetric: 'Custos Operacionais', transformation: 'SUM', status: 'active' },
   { id: '3', sourceField: 'estoque.quantidade', targetMetric: 'Giro de Estoque', transformation: 'AVG', status: 'active' },
@@ -67,6 +67,12 @@ export function DataSourceSection() {
   const [manualUnit, setManualUnit] = useState('brl');
   const [manualSector, setManualSector] = useState('');
   const [manualNotes, setManualNotes] = useState('');
+
+  // Mappings state
+  const [mappings, setMappings] = useState<DataMapping[]>(INITIAL_MAPPINGS);
+  const [newMappingOpen, setNewMappingOpen] = useState(false);
+  const [editMappingId, setEditMappingId] = useState<string | null>(null);
+  const [mappingForm, setMappingForm] = useState({ sourceField: '', targetMetric: '', transformation: 'SUM' });
 
   // Access denied view
   if (!permissions.canView) {
@@ -153,6 +159,54 @@ export function DataSourceSection() {
       title: 'Sincronização completa!',
       description: `${dataSources.length} fontes de dados atualizadas.`,
     });
+  };
+
+  const handleSourceSettings = (sourceName: string) => {
+    toast({
+      title: 'Configurações',
+      description: `Use "Nova Fonte" para reconfigurar "${sourceName}".`,
+    });
+  };
+
+  const handleAddMapping = () => {
+    if (!mappingForm.sourceField || !mappingForm.targetMetric) {
+      toast({ title: 'Erro', description: 'Preencha todos os campos do mapeamento.', variant: 'destructive' });
+      return;
+    }
+    const newMapping: DataMapping = {
+      id: String(Date.now()),
+      sourceField: mappingForm.sourceField,
+      targetMetric: mappingForm.targetMetric,
+      transformation: mappingForm.transformation,
+      status: 'active',
+    };
+    setMappings(prev => [...prev, newMapping]);
+    setMappingForm({ sourceField: '', targetMetric: '', transformation: 'SUM' });
+    setNewMappingOpen(false);
+    toast({ title: 'Mapeamento criado', description: `"${newMapping.targetMetric}" foi adicionado.` });
+  };
+
+  const handleEditMapping = (mapping: DataMapping) => {
+    setEditMappingId(mapping.id);
+    setMappingForm({ sourceField: mapping.sourceField, targetMetric: mapping.targetMetric, transformation: mapping.transformation });
+  };
+
+  const handleSaveEditMapping = () => {
+    if (!editMappingId) return;
+    setMappings(prev => prev.map(m =>
+      m.id === editMappingId
+        ? { ...m, sourceField: mappingForm.sourceField, targetMetric: mappingForm.targetMetric, transformation: mappingForm.transformation }
+        : m
+    ));
+    setEditMappingId(null);
+    setMappingForm({ sourceField: '', targetMetric: '', transformation: 'SUM' });
+    toast({ title: 'Mapeamento atualizado', description: 'Alterações salvas com sucesso.' });
+  };
+
+  const handleDeleteMapping = (id: string) => {
+    const mapping = mappings.find(m => m.id === id);
+    setMappings(prev => prev.filter(m => m.id !== id));
+    toast({ title: 'Mapeamento excluído', description: `"${mapping?.targetMetric}" foi removido.` });
   };
 
   return (
@@ -244,7 +298,7 @@ export function DataSourceSection() {
                         >
                           <RefreshCw className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSourceSettings(source.name)}>
                           <Settings className="w-4 h-4" />
                         </Button>
                         <Button 
@@ -284,7 +338,7 @@ export function DataSourceSection() {
                   <CardTitle className="text-lg">Mapeamento de Campos</CardTitle>
                   <CardDescription>Configure como os dados das fontes alimentam as métricas</CardDescription>
                 </div>
-                <Button size="sm" disabled={!permissions.canManageMappings}>
+                <Button size="sm" disabled={!permissions.canManageMappings} onClick={() => { setEditMappingId(null); setMappingForm({ sourceField: '', targetMetric: '', transformation: 'SUM' }); setNewMappingOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Mapeamento
                 </Button>
@@ -302,7 +356,7 @@ export function DataSourceSection() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockMappings.map((mapping) => (
+                  {mappings.map((mapping) => (
                     <TableRow key={mapping.id}>
                       <TableCell className="font-mono text-sm">{mapping.sourceField}</TableCell>
                       <TableCell className="font-medium">{mapping.targetMetric}</TableCell>
@@ -311,10 +365,10 @@ export function DataSourceSection() {
                       </TableCell>
                       <TableCell>{getStatusBadge(mapping.status)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!permissions.canManageMappings}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!permissions.canManageMappings} onClick={() => { handleEditMapping(mapping); setNewMappingOpen(true); }}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!permissions.canManageMappings}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={!permissions.canManageMappings} onClick={() => handleDeleteMapping(mapping.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </TableCell>
@@ -324,6 +378,55 @@ export function DataSourceSection() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* New/Edit Mapping Dialog */}
+          <Dialog open={newMappingOpen} onOpenChange={setNewMappingOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>{editMappingId ? 'Editar Mapeamento' : 'Novo Mapeamento'}</DialogTitle>
+                <DialogDescription>Configure a relação entre campo de origem e métrica de destino</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Campo de Origem</Label>
+                  <Input
+                    placeholder="Ex: vendas.valor_total"
+                    value={mappingForm.sourceField}
+                    onChange={(e) => setMappingForm(prev => ({ ...prev, sourceField: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Métrica de Destino</Label>
+                  <Input
+                    placeholder="Ex: Faturamento Mensal"
+                    value={mappingForm.targetMetric}
+                    onChange={(e) => setMappingForm(prev => ({ ...prev, targetMetric: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Transformação</Label>
+                  <Select value={mappingForm.transformation} onValueChange={(v) => setMappingForm(prev => ({ ...prev, transformation: v }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SUM">SUM</SelectItem>
+                      <SelectItem value="AVG">AVG</SelectItem>
+                      <SelectItem value="COUNT">COUNT</SelectItem>
+                      <SelectItem value="MAX">MAX</SelectItem>
+                      <SelectItem value="MIN">MIN</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setNewMappingOpen(false)}>Cancelar</Button>
+                <Button onClick={editMappingId ? handleSaveEditMapping : handleAddMapping}>
+                  {editMappingId ? 'Salvar' : 'Criar'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Logs */}

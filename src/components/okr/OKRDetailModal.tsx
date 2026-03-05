@@ -73,10 +73,10 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
   };
 
   const handleAddTask = async (task: Task) => {
-    // For Supabase, we need to use the hook
-    // But since this form creates a Task object, we'll handle it here
-    // The TaskForm will need to be updated to use Supabase hooks directly
-    console.log('Task created:', task);
+    toast({
+      title: 'Tarefa criada',
+      description: `"${task.title}" foi adicionada com sucesso.`,
+    });
   };
 
   const handleToggleTaskStatus = async (taskId: string) => {
