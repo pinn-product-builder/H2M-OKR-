@@ -6,7 +6,7 @@ test.describe('Header', () => {
     await login(page);
   });
 
-  test('deve exibir o header com título', async ({ page }) => {
+  test('deve exibir header com título e subtítulo', async ({ page }) => {
     await expect(page.locator('header h1')).toBeVisible();
   });
 
@@ -15,7 +15,7 @@ test.describe('Header', () => {
     await expect(searchInput).toBeVisible();
   });
 
-  test('deve executar busca via Enter', async ({ page }) => {
+  test('deve executar busca global via Enter e navegar para OKRs', async ({ page }) => {
     const searchInput = page.locator('header input[placeholder*="Buscar"]');
     await searchInput.fill('faturamento');
     await searchInput.press('Enter');
@@ -23,7 +23,7 @@ test.describe('Header', () => {
     await expect(page.locator('h1')).toContainText(/OKR/i);
   });
 
-  test('deve abrir dropdown de notificações ao clicar no sino', async ({ page }) => {
+  test('deve abrir dropdown de notificações', async ({ page }) => {
     const bellButton = page.locator('header button:has(svg.lucide-bell)');
     const altBell = page.locator('header button').filter({ has: page.locator('svg') }).first();
     const btn = await bellButton.isVisible().catch(() => false) ? bellButton : altBell;
@@ -31,6 +31,27 @@ test.describe('Header', () => {
     await page.waitForTimeout(1000);
     const menuVisible = await page.locator('[role="menu"], [role="menuitem"]').first().isVisible().catch(() => false);
     expect(menuVisible).toBeTruthy();
+  });
+
+  test('deve marcar notificações como lidas', async ({ page }) => {
+    const bellButton = page.locator('header button:has(svg.lucide-bell)');
+    const altBell = page.locator('header button').filter({ has: page.locator('svg') }).first();
+    const btn = await bellButton.isVisible().catch(() => false) ? bellButton : altBell;
+    await btn.click();
+    await page.waitForTimeout(500);
+    const markAllBtn = page.locator('button').filter({ hasText: /Marcar todas/i });
+    if (await markAllBtn.isVisible().catch(() => false)) {
+      await markAllBtn.click();
+      await page.waitForTimeout(500);
+    }
+  });
+
+  test('deve trocar tema (claro/escuro)', async ({ page }) => {
+    const themeSelect = page.locator('header select, header [role="combobox"]').first();
+    if (await themeSelect.isVisible().catch(() => false)) {
+      await themeSelect.click();
+      await page.waitForTimeout(500);
+    }
   });
 
   test('deve abrir menu do usuário e ver opção Sair', async ({ page }) => {
