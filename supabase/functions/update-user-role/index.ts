@@ -75,15 +75,28 @@ serve(async (req) => {
       return errorResponse('Perfil de acesso inválido')
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { data: existing } = await supabaseAdmin
       .from('user_roles')
-      .upsert({
-        user_id: userId,
-        role: newRole,
-      }, { onConflict: 'user_id' })
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
 
-    if (updateError) {
-      return errorResponse(updateError.message)
+    let roleError
+    if (existing) {
+      const { error } = await supabaseAdmin
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('user_id', userId)
+      roleError = error
+    } else {
+      const { error } = await supabaseAdmin
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole })
+      roleError = error
+    }
+
+    if (roleError) {
+      return errorResponse(roleError.message)
     }
 
     return new Response(
