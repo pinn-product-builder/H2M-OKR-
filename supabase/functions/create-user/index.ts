@@ -6,6 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' }
+
+function errorResponse(message: string) {
+  return new Response(
+    JSON.stringify({ error: message }),
+    { status: 200, headers: jsonHeaders }
+  )
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -14,10 +23,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('Token de autenticação ausente')
     }
 
     const supabaseAdmin = createClient(
@@ -45,10 +51,7 @@ serve(async (req) => {
     const { data: { user: callingUser }, error: authError } = await supabaseClient.auth.getUser()
     
     if (authError || !callingUser) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('Usuário não autenticado')
     }
 
     const { data: roleData } = await supabaseAdmin
@@ -58,34 +61,22 @@ serve(async (req) => {
       .single()
 
     if (!roleData || roleData.role !== 'admin') {
-      return new Response(
-        JSON.stringify({ error: 'Only admins can create users' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('Apenas administradores podem criar usuários')
     }
 
-    const { email, password, name, role, sectorId } = await req.json()
+    const { email, password, name, role } = await req.json()
 
     if (!email || !password || !name || !role) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: email, password, name, role' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('Preencha todos os campos obrigatórios: nome, email, senha e perfil')
     }
 
     if (password.length < 6) {
-      return new Response(
-        JSON.stringify({ error: 'Password must be at least 6 characters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('A senha deve ter no mínimo 6 caracteres')
     }
 
     const validRoles = ['admin', 'gestor', 'analista', 'visualizador']
     if (!validRoles.includes(role)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid role' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('Perfil de acesso inválido')
     }
 
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -96,17 +87,14 @@ serve(async (req) => {
     })
 
     if (createError) {
-      return new Response(
-        JSON.stringify({ error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      const msg = createError.message.includes('already been registered')
+        ? 'Este email já está cadastrado no sistema'
+        : createError.message
+      return errorResponse(msg)
     }
 
     if (!newUser.user) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to create user' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse('Falha ao criar usuário no auth')
     }
 
     const userId = newUser.user.id
@@ -122,10 +110,7 @@ serve(async (req) => {
     if (profileError) {
       console.error('Profile creation error:', profileError)
       await supabaseAdmin.auth.admin.deleteUser(userId)
-      return new Response(
-        JSON.stringify({ error: `Failed to create user profile: ${profileError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse(`Falha ao criar perfil: ${profileError.message}`)
     }
 
     const { error: roleError } = await supabaseAdmin
@@ -139,10 +124,7 @@ serve(async (req) => {
       console.error('Role creation error:', roleError)
       await supabaseAdmin.from('profiles').delete().eq('user_id', userId)
       await supabaseAdmin.auth.admin.deleteUser(userId)
-      return new Response(
-        JSON.stringify({ error: `Failed to assign user role: ${roleError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return errorResponse(`Falha ao atribuir perfil: ${roleError.message}`)
     }
 
     return new Response(
@@ -155,15 +137,12 @@ serve(async (req) => {
           role,
         }
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: jsonHeaders }
     )
 
   } catch (error: unknown) {
     console.error('Error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    const errorMessage = error instanceof Error ? error.message : 'Erro interno do servidor'
+    return errorResponse(errorMessage)
   }
 })
