@@ -153,34 +153,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            name,
-          },
-        },
+      const { data, error } = await supabase.functions.invoke('register-user', {
+        body: { email, password, name },
       });
 
       if (error) {
-        return { success: false, error: translateAuthError(error.message) };
+        return { success: false, error: translateAuthError(error.message || 'Erro ao criar conta') };
       }
 
-      if (data.user) {
-        const { error: profileError } = await supabase.from('profiles').insert({
-          user_id: data.user.id,
-          name,
-          email,
-        });
-        if (profileError) console.warn('Profile creation warning:', profileError.message);
-
-        const { error: roleError } = await supabase.from('user_roles').insert({
-          user_id: data.user.id,
-          role: 'visualizador',
-        });
-        if (roleError) console.warn('Role assignment warning:', roleError.message);
+      if (data?.error) {
+        return { success: false, error: data.error };
       }
 
       return { success: true };
