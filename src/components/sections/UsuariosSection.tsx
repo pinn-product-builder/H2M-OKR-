@@ -57,23 +57,35 @@ export function UsuariosSection() {
     await updateRoleMutation.mutateAsync({ userId, newRole });
   };
 
+  const [passwordError, setPasswordError] = useState('');
+
   const handleAddUser = async () => {
     if (!newUserName || !newUserEmail || !newUserPassword) {
       return;
     }
 
-    await createUserMutation.mutateAsync({
-      email: newUserEmail,
-      password: newUserPassword,
-      name: newUserName,
-      role: newUserRole,
-    });
+    if (newUserPassword.length < 6) {
+      setPasswordError('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+    setPasswordError('');
 
-    setNewUserOpen(false);
-    setNewUserName('');
-    setNewUserEmail('');
-    setNewUserPassword('');
-    setNewUserRole('analista');
+    try {
+      await createUserMutation.mutateAsync({
+        email: newUserEmail,
+        password: newUserPassword,
+        name: newUserName,
+        role: newUserRole,
+      });
+
+      setNewUserOpen(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserRole('analista');
+    } catch {
+      // Error is handled by the mutation's onError callback
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -247,9 +259,16 @@ export function UsuariosSection() {
                   <Input
                     type="password"
                     value={newUserPassword}
-                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    onChange={(e) => {
+                      setNewUserPassword(e.target.value);
+                      if (passwordError) setPasswordError('');
+                    }}
                     placeholder="Mínimo 6 caracteres"
+                    className={passwordError ? 'border-destructive' : ''}
                   />
+                  {passwordError && (
+                    <p className="text-xs text-destructive">{passwordError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Perfil de Acesso</Label>

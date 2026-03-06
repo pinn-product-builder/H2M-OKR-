@@ -7,13 +7,11 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -22,7 +20,6 @@ serve(async (req) => {
       )
     }
 
-    // Create admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -34,10 +31,10 @@ serve(async (req) => {
       }
     )
 
-    // Create client to verify calling user
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? ''
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '',
+      anonKey,
       {
         global: {
           headers: { Authorization: authHeader },
@@ -45,7 +42,6 @@ serve(async (req) => {
       }
     )
 
-    // Verify user is authenticated and is admin
     const { data: { user: callingUser }, error: authError } = await supabaseClient.auth.getUser()
     
     if (authError || !callingUser) {
@@ -55,7 +51,6 @@ serve(async (req) => {
       )
     }
 
-    // Check if calling user is admin
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
@@ -69,7 +64,6 @@ serve(async (req) => {
       )
     }
 
-    // Get request body
     const { email, password, name, role, sectorId } = await req.json()
 
     if (!email || !password || !name || !role) {
@@ -79,7 +73,13 @@ serve(async (req) => {
       )
     }
 
-    // Validate role
+    if (password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: 'Password must be at least 6 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const validRoles = ['admin', 'gestor', 'analista', 'visualizador']
     if (!validRoles.includes(role)) {
       return new Response(
@@ -88,11 +88,10 @@ serve(async (req) => {
       )
     }
 
-    // Create user with admin client
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: true,
       user_metadata: { name }
     })
 
@@ -110,36 +109,47 @@ serve(async (req) => {
       )
     }
 
-    // Create profile
+    const userId = newUser.user.id
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
-        user_id: newUser.user.id,
+        user_id: userId,
         name,
         email,
       })
 
     if (profileError) {
       console.error('Profile creation error:', profileError)
+      await supabaseAdmin.auth.admin.deleteUser(userId)
+      return new Response(
+        JSON.stringify({ error: `Failed to create user profile: ${profileError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Create user role
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
-        user_id: newUser.user.id,
+        user_id: userId,
         role,
       })
 
     if (roleError) {
       console.error('Role creation error:', roleError)
+      await supabaseAdmin.from('profiles').delete().eq('user_id', userId)
+      await supabaseAdmin.auth.admin.deleteUser(userId)
+      return new Response(
+        JSON.stringify({ error: `Failed to assign user role: ${roleError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         user: {
-          id: newUser.user.id,
+          id: userId,
           email: newUser.user.email,
           name,
           role,

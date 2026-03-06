@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2 } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { calculateKRProgress, calculateOKRProgressFromKRs, getStatusFromProgress } from '@/lib/okr-calculations';
 import type { OKRViewFilters, UserView } from '@/types/views';
 
 export function OKRsSection() {
@@ -21,6 +25,38 @@ export function OKRsSection() {
   const { data: defaultView } = useDefaultView('okr');
   const updateView = useUpdateView();
   const updateObjective = useUpdateObjective();
+  const queryClient = useQueryClient();
+  const [unarchivingCycleId, setUnarchivingCycleId] = useState<string | null>(null);
+
+  const handleUnarchiveCycle = async (cycleId: string, cycleName: string) => {
+    setUnarchivingCycleId(cycleId);
+    try {
+      const { error } = await supabase
+        .from('okr_cycles')
+        .update({ is_archived: false })
+        .eq('id', cycleId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['cycles'] });
+      toast({
+        title: 'Ciclo restaurado',
+        description: `"${cycleName}" foi desarquivado com sucesso.`,
+      });
+    } catch {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível desarquivar o ciclo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUnarchivingCycleId(null);
+    }
+  };
+
+  const getOKRCountForCycle = useCallback((cycleId: string) => {
+    return archivedObjectives.filter((obj) => obj.cycle_id === cycleId).length;
+  }, [archivedObjectives]);
 
   // View state
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
@@ -116,12 +152,18 @@ export function OKRsSection() {
     });
   }, [archivedObjectives, searchTerm]);
 
-  const stats = useMemo(() => ({
-    total: objectives.length,
-    onTrack: objectives.filter(o => o.status === 'on-track').length,
-    attention: objectives.filter(o => o.status === 'attention').length,
-    critical: objectives.filter(o => o.status === 'critical').length,
-  }), [objectives]);
+  const stats = useMemo(() => {
+    const withCalc = objectives.map(o => {
+      const progress = calculateOKRProgressFromKRs(o.key_results || []);
+      return getStatusFromProgress(progress);
+    });
+    return {
+      total: objectives.length,
+      onTrack: withCalc.filter(s => s === 'on-track' || s === 'completed').length,
+      attention: withCalc.filter(s => s === 'attention').length,
+      critical: withCalc.filter(s => s === 'critical').length,
+    };
+  }, [objectives]);
 
   const restoreObjective = async (id: string) => {
     await updateObjective.mutateAsync({ id, is_archived: false });
@@ -310,46 +352,53 @@ export function OKRsSection() {
                 {filteredObjectives.map((objective, index) => (
                   <OKRCard 
                     key={objective.id} 
-                    objective={{
-                      id: objective.id,
-                      title: objective.title,
-                      description: objective.description || '',
-                      sector: objective.sector_id || '',
-                      owner: objective.owner?.name || '',
-                      period: getSelectedCycleName(),
-                      priority: (objective.priority as 'high' | 'medium' | 'low') || 'medium',
-                      progress: objective.progress,
-                      status: objective.status as any,
-                      createdAt: objective.created_at,
-                      updatedAt: objective.updated_at,
-                      keyResults: (objective.key_results || []).map(kr => ({
-                        id: kr.id,
-                        title: kr.title,
-                        type: kr.type as any,
-                        current: kr.current_value,
-                        target: kr.target_value,
-                        baseline: kr.baseline_value ?? 0,
-                        unit: kr.unit || '',
-                        owner: kr.owner?.name || '',
-                        progress: kr.target_value > 0 ? Math.round((kr.current_value / kr.target_value) * 100) : 0,
-                        status: kr.status as any,
-                        lastUpdate: kr.updated_at,
-                        tasks: (kr.tasks || []).map(t => ({
-                          id: t.id,
-                          title: t.title,
-                          description: t.description,
-                          assignedTo: t.assignee_id || '',
-                          assignedToName: t.assignee?.name || '',
-                          dueDate: t.due_date,
-                          priority: t.priority as any,
-                          status: t.status as any,
-                          createdAt: t.created_at,
-                          completedAt: t.completed_at,
-                          parentKRId: t.key_result_id,
-                          parentOKRId: objective.id,
-                        })),
-                      })),
-                    }} 
+                    objective={(() => {
+                      const krs = objective.key_results || [];
+                      const okrProgress = calculateOKRProgressFromKRs(krs);
+                      return {
+                        id: objective.id,
+                        title: objective.title,
+                        description: objective.description || '',
+                        sector: objective.sector_id || '',
+                        owner: objective.owner?.name || '',
+                        period: getSelectedCycleName(),
+                        priority: (objective.priority as 'high' | 'medium' | 'low') || 'medium',
+                        progress: okrProgress,
+                        status: getStatusFromProgress(okrProgress) as any,
+                        createdAt: objective.created_at,
+                        updatedAt: objective.updated_at,
+                        keyResults: krs.map(kr => {
+                          const krProgress = calculateKRProgress(kr.current_value, kr.target_value, kr.type, kr.tasks);
+                          return {
+                            id: kr.id,
+                            title: kr.title,
+                            type: kr.type as any,
+                            current: kr.current_value,
+                            target: kr.target_value,
+                            baseline: kr.baseline_value ?? 0,
+                            unit: kr.unit || '',
+                            owner: kr.owner?.name || '',
+                            progress: krProgress,
+                            status: getStatusFromProgress(krProgress) as any,
+                            lastUpdate: kr.updated_at,
+                            tasks: (kr.tasks || []).map(t => ({
+                              id: t.id,
+                              title: t.title,
+                              description: t.description,
+                              assignedTo: t.assignee_id || '',
+                              assignedToName: t.assignee?.name || '',
+                              dueDate: t.due_date,
+                              priority: t.priority as any,
+                              status: t.status as any,
+                              createdAt: t.created_at,
+                              completedAt: t.completed_at,
+                              parentKRId: t.key_result_id,
+                              parentOKRId: objective.id,
+                            })),
+                          };
+                        }),
+                      };
+                    })()} 
                     index={index} 
                   />
                 ))}
@@ -417,11 +466,43 @@ export function OKRsSection() {
       </Tabs>
 
       {archivedCycles.length > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-          <FolderArchive className="w-4 h-4" />
-          <span>
-            {archivedCycles.length} ciclo{archivedCycles.length !== 1 ? 's' : ''} arquivado{archivedCycles.length !== 1 ? 's' : ''}.
-          </span>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <FolderArchive className="w-4 h-4" />
+            <span>
+              {archivedCycles.length} ciclo{archivedCycles.length !== 1 ? 's' : ''} arquivado{archivedCycles.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="space-y-1">
+            {archivedCycles.map((cycle) => (
+              <div
+                key={cycle.id}
+                className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed"
+              >
+                <div className="flex items-center gap-2">
+                  <FolderArchive className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{cycle.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({getOKRCountForCycle(cycle.id)} OKR{getOKRCountForCycle(cycle.id) !== 1 ? 's' : ''})
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-xs"
+                  disabled={unarchivingCycleId === cycle.id}
+                  onClick={() => handleUnarchiveCycle(cycle.id, cycle.name)}
+                >
+                  {unarchivingCycleId === cycle.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3 h-3" />
+                  )}
+                  Desarquivar
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

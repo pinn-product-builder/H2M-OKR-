@@ -1,5 +1,6 @@
 import { Target, CheckCircle2, AlertCircle, XCircle, TrendingUp } from 'lucide-react';
 import { useObjectives, useCycles } from '@/hooks/useSupabaseData';
+import { calculateOKRProgressFromKRs, getStatusFromProgress } from '@/lib/okr-calculations';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -9,15 +10,22 @@ export function QuickStats() {
   const { data: objectives = [] } = useObjectives(activeCycle?.id);
 
   const stats = useMemo(() => {
+    const withProgress = objectives.map(o => {
+      const progress = calculateOKRProgressFromKRs(o.key_results || []);
+      const status = getStatusFromProgress(progress);
+      return { progress, status };
+    });
+
     const totalOKRs = objectives.length;
-    const onTrack = objectives.filter(o => o.status === 'on-track').length;
-    const attention = objectives.filter(o => o.status === 'attention').length;
-    const critical = objectives.filter(o => o.status === 'critical').length;
+    const onTrack = withProgress.filter(o => o.status === 'on-track').length;
+    const completed = withProgress.filter(o => o.status === 'completed').length;
+    const attention = withProgress.filter(o => o.status === 'attention').length;
+    const critical = withProgress.filter(o => o.status === 'critical').length;
     const avgProgress = totalOKRs > 0 
-      ? Math.round(objectives.reduce((sum, o) => sum + o.progress, 0) / totalOKRs)
+      ? Math.round(withProgress.reduce((sum, o) => sum + o.progress, 0) / totalOKRs)
       : 0;
 
-    return { totalOKRs, onTrack, attention, critical, avgProgress };
+    return { totalOKRs, onTrack: onTrack + completed, attention, critical, avgProgress };
   }, [objectives]);
 
   const cycleName = activeCycle?.name || 'Ciclo Atual';

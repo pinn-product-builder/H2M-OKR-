@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { OKRStatus } from '@/types/okr';
+import { getStatusFromProgress } from '@/lib/okr-calculations';
 
 interface ProgressBarProps {
   progress: number;
@@ -10,15 +11,10 @@ interface ProgressBarProps {
 }
 
 const statusColors: Record<OKRStatus, string> = {
+  'completed': 'gradient-success',
   'on-track': 'gradient-success',
   'attention': 'gradient-warning',
   'critical': 'gradient-critical',
-};
-
-const getStatusFromProgress = (progress: number): OKRStatus => {
-  if (progress >= 70) return 'on-track';
-  if (progress >= 40) return 'attention';
-  return 'critical';
 };
 
 const sizeClasses = {
@@ -34,8 +30,8 @@ export function ProgressBar({
   showLabel = false,
   animated = true 
 }: ProgressBarProps) {
-  const resolvedStatus = status ?? getStatusFromProgress(progress);
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
+  const resolvedStatus = status ?? getStatusFromProgress(clampedProgress);
   
   return (
     <div className="w-full">
@@ -44,7 +40,7 @@ export function ProgressBar({
           <span className="text-xs font-medium text-muted-foreground">Progresso</span>
           <span className={cn(
             "text-xs font-semibold tabular-nums",
-            resolvedStatus === 'on-track' && "text-success",
+            (resolvedStatus === 'on-track' || resolvedStatus === 'completed') && "text-success",
             resolvedStatus === 'attention' && "text-warning",
             resolvedStatus === 'critical' && "text-critical"
           )}>

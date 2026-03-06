@@ -86,6 +86,7 @@ export interface Task {
   assignee_id?: string;
   status: 'pending' | 'in-progress' | 'completed' | 'blocked';
   priority: 'low' | 'medium' | 'high';
+  start_date?: string;
   due_date?: string;
   completed_at?: string;
   created_at: string;

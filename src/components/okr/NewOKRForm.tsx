@@ -19,7 +19,7 @@ import { useDocumentParser, ParsedDocument } from '@/hooks/useDocumentParser';
 
 const keyResultSchema = z.object({
   title: z.string().min(5, 'Título deve ter pelo menos 5 caracteres').max(200),
-  type: z.enum(['numeric', 'percentage', 'boolean']),
+  type: z.enum(['numeric', 'percentage']),
   target: z.coerce.number().min(0, 'Meta deve ser positiva'),
   baseline: z.coerce.number().min(0, 'Baseline deve ser positivo'),
   unit: z.string().min(1, 'Unidade é obrigatória'),
@@ -53,7 +53,6 @@ const priorityOptions = [
 const krTypeOptions = [
   { value: 'numeric', label: 'Numérico' },
   { value: 'percentage', label: 'Percentual' },
-  { value: 'boolean', label: 'Sim/Não' },
 ];
 
 interface NewOKRFormProps {

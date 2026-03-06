@@ -17,6 +17,7 @@ import {
 import { MetricCard as MetricCardType, SectorSummary } from '@/types/okr';
 import { SkeletonMetricCard, SkeletonCard } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { calculateKRProgress, calculateOKRProgressFromKRs, getStatusFromProgress } from '@/lib/okr-calculations';
 
 export function Dashboard() {
   const { data: cycles = [] } = useCycles();
@@ -86,7 +87,10 @@ export function Dashboard() {
     return sectors.map(sector => {
       const sectorObjectives = objectives.filter(o => o.sector_id === sector.id);
       const avgProgress = sectorObjectives.length > 0 
-        ? Math.round(sectorObjectives.reduce((sum, o) => sum + o.progress, 0) / sectorObjectives.length)
+        ? Math.round(sectorObjectives.reduce((sum, o) => {
+            const okrProgress = calculateOKRProgressFromKRs(o.key_results || []);
+            return sum + okrProgress;
+          }, 0) / sectorObjectives.length)
         : 0;
       
       return {
@@ -94,9 +98,9 @@ export function Dashboard() {
         label: sector.name,
         totalOKRs: sectorObjectives.length,
         avgProgress,
-        onTrack: sectorObjectives.filter(o => o.status === 'on-track').length,
-        attention: sectorObjectives.filter(o => o.status === 'attention').length,
-        critical: sectorObjectives.filter(o => o.status === 'critical').length,
+        onTrack: sectorObjectives.filter(o => { const p = calculateOKRProgressFromKRs(o.key_results || []); return p >= 70 && p < 100; }).length,
+        attention: sectorObjectives.filter(o => { const p = calculateOKRProgressFromKRs(o.key_results || []); return p >= 40 && p < 70; }).length,
+        critical: sectorObjectives.filter(o => { const p = calculateOKRProgressFromKRs(o.key_results || []); return p < 40; }).length,
       };
     }).filter(s => s.totalOKRs > 0);
   }, [sectors, objectives]);
@@ -111,37 +115,40 @@ export function Dashboard() {
       owner: obj.owner?.name || '',
       period: activeCycle?.name || '',
       priority: (obj.priority as 'high' | 'medium' | 'low') || 'medium',
-      progress: obj.progress,
-      status: obj.status as any,
+      progress: calculateOKRProgressFromKRs(obj.key_results || []),
+      status: getStatusFromProgress(calculateOKRProgressFromKRs(obj.key_results || [])) as any,
       createdAt: obj.created_at,
       updatedAt: obj.updated_at,
-      keyResults: (obj.key_results || []).map(kr => ({
-        id: kr.id,
-        title: kr.title,
-        type: kr.type as any,
-        current: kr.current_value,
-        target: kr.target_value,
-        baseline: kr.baseline_value ?? 0,
-        unit: kr.unit || '',
-        owner: kr.owner?.name || '',
-        progress: kr.target_value > 0 ? Math.round((kr.current_value / kr.target_value) * 100) : 0,
-        status: kr.status as any,
-        lastUpdate: kr.updated_at,
-        tasks: (kr.tasks || []).map(t => ({
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          assignedTo: t.assignee_id || '',
-          assignedToName: t.assignee?.name || '',
-          dueDate: t.due_date,
-          priority: t.priority as any,
-          status: t.status as any,
-          createdAt: t.created_at,
-          completedAt: t.completed_at,
-          parentKRId: t.key_result_id,
-          parentOKRId: obj.id,
-        })),
-      })),
+      keyResults: (obj.key_results || []).map(kr => {
+        const krProgress = calculateKRProgress(kr.current_value, kr.target_value, kr.type, kr.tasks);
+        return {
+          id: kr.id,
+          title: kr.title,
+          type: kr.type as any,
+          current: kr.current_value ?? 0,
+          target: kr.target_value ?? 0,
+          baseline: kr.baseline_value ?? 0,
+          unit: kr.unit || '',
+          owner: kr.owner?.name || '',
+          progress: krProgress,
+          status: getStatusFromProgress(krProgress) as any,
+          lastUpdate: kr.updated_at,
+          tasks: (kr.tasks || []).map(t => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            assignedTo: t.assignee_id || '',
+            assignedToName: t.assignee?.name || '',
+            dueDate: t.due_date,
+            priority: t.priority as any,
+            status: t.status as any,
+            createdAt: t.created_at,
+            completedAt: t.completed_at,
+            parentKRId: t.key_result_id,
+            parentOKRId: obj.id,
+          })),
+        };
+      }),
     }));
   }, [objectives, activeCycle]);
 
