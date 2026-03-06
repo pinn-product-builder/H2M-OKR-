@@ -31,17 +31,30 @@ export function OKRsSection() {
   const handleUnarchiveCycle = async (cycleId: string, cycleName: string) => {
     setUnarchivingCycleId(cycleId);
     try {
-      const { error } = await supabase
+      const { error: cycleError } = await supabase
         .from('okr_cycles')
         .update({ is_archived: false })
         .eq('id', cycleId);
 
-      if (error) throw error;
+      if (cycleError) throw cycleError;
 
-      queryClient.invalidateQueries({ queryKey: ['cycles'] });
+      const { error: objError } = await supabase
+        .from('objectives')
+        .update({ is_archived: false })
+        .eq('cycle_id', cycleId);
+
+      if (objError) throw objError;
+
+      await queryClient.invalidateQueries({ queryKey: ['cycles'] });
+      await queryClient.invalidateQueries({ queryKey: ['archived-objectives'] });
+      await queryClient.invalidateQueries({ queryKey: ['objectives'] });
+
+      setSelectedCycleId(cycleId);
+      setActiveTab('ativos');
+
       toast({
         title: 'Ciclo restaurado',
-        description: `"${cycleName}" foi desarquivado com sucesso.`,
+        description: `"${cycleName}" e seus OKRs foram restaurados com sucesso.`,
       });
     } catch {
       toast({
