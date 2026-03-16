@@ -1,4 +1,4 @@
-import { useSectors, useCycles, useObjectives, useArchivedObjectives, useUpdateObjective } from '@/hooks/useSupabaseData';
+import { useSectors, useCycles, useObjectives, useArchivedObjectives, useUpdateObjective, useProfiles } from '@/hooks/useSupabaseData';
 import { useUserViews, useDefaultView, useUpdateView } from '@/hooks/useViews';
 import { OKRCard } from '@/components/dashboard/OKRCard';
 import { NewOKRForm } from '@/components/okr/NewOKRForm';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2 } from 'lucide-react';
+import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2, User } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,7 @@ import type { OKRViewFilters, UserView } from '@/types/views';
 
 export function OKRsSection() {
   const { data: sectors = [], isLoading: sectorsLoading } = useSectors();
+  const { data: profiles = [] } = useProfiles();
   const { data: cycles = [], isLoading: cyclesLoading } = useCycles();
   const { data: archivedObjectives = [] } = useArchivedObjectives();
   const { data: defaultView } = useDefaultView('okr');
@@ -81,6 +82,7 @@ export function OKRsSection() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('ativos');
   
   const activeCycles = useMemo(() => cycles.filter(c => !c.is_archived), [cycles]);
@@ -154,9 +156,10 @@ export function OKRsSection() {
     return objectives.filter(obj => {
       const matchesSearch = obj.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || obj.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesOwner = ownerFilter === 'all' || obj.owner_id === ownerFilter;
+      return matchesSearch && matchesStatus && matchesOwner;
     });
-  }, [objectives, searchTerm, statusFilter]);
+  }, [objectives, searchTerm, statusFilter, ownerFilter]);
 
   const filteredArchivedObjectives = useMemo(() => {
     return archivedObjectives.filter(obj => {
@@ -329,6 +332,20 @@ export function OKRsSection() {
                   <SelectItem value="critical">Crítico</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={ownerFilter} onValueChange={(value) => {
+                setOwnerFilter(value);
+                handleFilterChange();
+              }}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {profiles.map(p => (
+                    <SelectItem key={p.user_id} value={p.user_id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="flex items-center gap-2">
@@ -364,7 +381,8 @@ export function OKRsSection() {
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {filteredObjectives.map((objective, index) => (
                   <OKRCard 
-                    key={objective.id} 
+                    key={objective.id}
+                    rawObjective={objective}
                     objective={(() => {
                       const krs = objective.key_results || [];
                       const okrProgress = calculateOKRProgressFromKRs(krs);

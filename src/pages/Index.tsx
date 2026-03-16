@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { OKRsSection } from '@/components/sections/OKRsSection';
+import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import { UsuariosSection } from '@/components/sections/UsuariosSection';
 import { ConfiguracoesSection } from '@/components/sections/ConfiguracoesSection';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 const sectionTitles: Record<string, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Visão geral dos OKRs e indicadores' },
   okrs: { title: 'Gestão de OKRs', subtitle: 'Cadastro e acompanhamento de objetivos' },
+  kanban: { title: 'Tarefas', subtitle: 'Quadro Kanban de tarefas por status' },
   usuarios: { title: 'Usuários', subtitle: 'Gerenciamento de usuários e permissões' },
   configuracoes: { title: 'Configurações', subtitle: 'Configurações do sistema' },
 };
@@ -44,6 +46,7 @@ const Index = () => {
         <div className="p-6">
           {currentSection === 'dashboard' && <Dashboard />}
           {currentSection === 'okrs' && <OKRsSection />}
+          {currentSection === 'kanban' && <KanbanBoard />}
           {currentSection === 'usuarios' && <UsuariosSection />}
           {currentSection === 'configuracoes' && <ConfiguracoesSection />}
         </div>

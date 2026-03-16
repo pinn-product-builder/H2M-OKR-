@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Objective, KeyResult, Task } from '@/types/okr';
 import { TaskList } from './TaskList';
 import { TaskForm } from './TaskForm';
+import { EditOKRForm } from './EditOKRForm';
 import { ProgressBar } from '@/components/dashboard/ProgressBar';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { useSectors, useCreateTask, useUpdateTask, useUpdateObjective, useDeleteObjective } from '@/hooks/useSupabaseData';
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Calendar, Target, ChevronDown, ChevronRight, Archive, ListTodo, Trash2, Loader2 } from 'lucide-react';
+import { User, Calendar, Target, ChevronDown, ChevronRight, Archive, ListTodo, Trash2, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,11 +32,13 @@ interface OKRDetailModalProps {
   objective: Objective;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  rawObjective?: any;
 }
 
-export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModalProps) {
+export function OKRDetailModal({ objective, open, onOpenChange, rawObjective }: OKRDetailModalProps) {
   const [expandedKRs, setExpandedKRs] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { data: sectors = [] } = useSectors();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -160,6 +163,16 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Progresso Geral</span>
             <div className="flex items-center gap-2">
+              {/* Edit button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={() => setShowEditDialog(true)}
+              >
+                <Pencil className="w-3 h-3" />
+                Editar
+              </Button>
               {/* Delete button - only enabled when no pending tasks */}
               <Button
                 variant="outline"
@@ -269,6 +282,14 @@ export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModal
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Dialog */}
+      <EditOKRForm
+        objective={objective}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        rawObjective={rawObjective}
+      />
     </Dialog>
   );
 }

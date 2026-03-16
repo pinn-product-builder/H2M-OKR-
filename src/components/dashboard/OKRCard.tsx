@@ -11,6 +11,7 @@ import { OKRDetailModal } from '@/components/okr/OKRDetailModal';
 interface OKRCardProps {
   objective: Objective;
   index: number;
+  rawObjective?: any;
 }
 
 // Generate mock weekly progress data based on current progress
@@ -55,7 +56,7 @@ function calculateTrend(data: { progress: number | null }[]): 'up' | 'down' | 's
   return 'stable';
 }
 
-export function OKRCard({ objective, index }: OKRCardProps) {
+export function OKRCard({ objective, index, rawObjective }: OKRCardProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { data: sectors = [] } = useSectors();
   
@@ -215,7 +216,8 @@ export function OKRCard({ objective, index }: OKRCardProps) {
       <OKRDetailModal 
         objective={objective} 
         open={isDetailOpen} 
-        onOpenChange={setIsDetailOpen} 
+        onOpenChange={setIsDetailOpen}
+        rawObjective={rawObjective}
       />
     </>
   );
