@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2 } from 'lucide-react';
+import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2, User } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
