@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 const sectionTitles: Record<string, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Visão geral dos OKRs e indicadores' },
   okrs: { title: 'Gestão de OKRs', subtitle: 'Cadastro e acompanhamento de objetivos' },
+  kanban: { title: 'Tarefas', subtitle: 'Quadro Kanban de tarefas por status' },
   usuarios: { title: 'Usuários', subtitle: 'Gerenciamento de usuários e permissões' },
   configuracoes: { title: 'Configurações', subtitle: 'Configurações do sistema' },
 };
