@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Objective, KeyResult, Task } from '@/types/okr';
 import { TaskList } from './TaskList';
 import { TaskForm } from './TaskForm';
+import { EditOKRForm } from './EditOKRForm';
 import { ProgressBar } from '@/components/dashboard/ProgressBar';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { useSectors, useCreateTask, useUpdateTask, useUpdateObjective, useDeleteObjective } from '@/hooks/useSupabaseData';
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Calendar, Target, ChevronDown, ChevronRight, Archive, ListTodo, Trash2, Loader2 } from 'lucide-react';
+import { User, Calendar, Target, ChevronDown, ChevronRight, Archive, ListTodo, Trash2, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
