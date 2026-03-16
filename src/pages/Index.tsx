@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { OKRsSection } from '@/components/sections/OKRsSection';
+import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import { UsuariosSection } from '@/components/sections/UsuariosSection';
 import { ConfiguracoesSection } from '@/components/sections/ConfiguracoesSection';
 import { cn } from '@/lib/utils';
