@@ -6,6 +6,7 @@ import {
   Settings, 
   Users,
   ChevronLeft,
+  Kanban,
 } from 'lucide-react';
 
 interface SidebarProps {
