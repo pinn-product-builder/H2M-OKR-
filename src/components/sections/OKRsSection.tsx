@@ -156,9 +156,10 @@ export function OKRsSection() {
     return objectives.filter(obj => {
       const matchesSearch = obj.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || obj.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesOwner = ownerFilter === 'all' || obj.owner_id === ownerFilter;
+      return matchesSearch && matchesStatus && matchesOwner;
     });
-  }, [objectives, searchTerm, statusFilter]);
+  }, [objectives, searchTerm, statusFilter, ownerFilter]);
 
   const filteredArchivedObjectives = useMemo(() => {
     return archivedObjectives.filter(obj => {
