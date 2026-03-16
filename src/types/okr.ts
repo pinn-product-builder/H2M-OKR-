@@ -59,6 +59,8 @@ export interface Objective {
   owner: string;
   period: string;
   priority: 'high' | 'medium' | 'low';
+  okrType?: OKRType;
+  parentId?: string;
   keyResults: KeyResult[];
   progress: number;
   status: OKRStatus;
