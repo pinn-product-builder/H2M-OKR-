@@ -163,6 +163,16 @@ export function OKRDetailModal({ objective, open, onOpenChange, rawObjective }: 
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Progresso Geral</span>
             <div className="flex items-center gap-2">
+              {/* Edit button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={() => setShowEditDialog(true)}
+              >
+                <Pencil className="w-3 h-3" />
+                Editar
+              </Button>
               {/* Delete button - only enabled when no pending tasks */}
               <Button
                 variant="outline"
