@@ -20,6 +20,7 @@ import type { OKRViewFilters, UserView } from '@/types/views';
 
 export function OKRsSection() {
   const { data: sectors = [], isLoading: sectorsLoading } = useSectors();
+  const { data: profiles = [] } = useProfiles();
   const { data: cycles = [], isLoading: cyclesLoading } = useCycles();
   const { data: archivedObjectives = [] } = useArchivedObjectives();
   const { data: defaultView } = useDefaultView('okr');
