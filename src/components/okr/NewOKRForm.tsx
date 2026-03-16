@@ -39,6 +39,8 @@ const okrFormSchema = z.object({
   priority: z.enum(['high', 'medium', 'low'], {
     required_error: 'Selecione uma prioridade',
   }),
+  okrType: z.enum(['strategic', 'tactical', 'operational']),
+  parentId: z.string().optional(),
   keyResults: z.array(keyResultSchema).min(1, 'Adicione pelo menos 1 Key Result').max(5, 'Máximo de 5 Key Results'),
 });
 
