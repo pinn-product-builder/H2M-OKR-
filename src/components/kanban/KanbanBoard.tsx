@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { Circle, Clock, CheckCircle2, AlertOctagon, Loader2, ListTodo, Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 import { useSectors, useProfiles, useCycles, useUpdateTask } from '@/hooks/useSupabaseData';
 import { useAllTasks } from '@/hooks/useAllTasks';
 import { KanbanColumn } from './KanbanColumn';

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { User, Calendar, ArrowRight, GripVertical } from 'lucide-react';
+import { User, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProfiles } from '@/hooks/useSupabaseData';
