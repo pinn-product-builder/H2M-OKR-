@@ -77,6 +77,17 @@ const priorityOptions = [
   { value: 'low', label: 'Baixa', color: 'text-muted-foreground' },
 ];
 
+const okrTypeOptions = [
+  { value: 'strategic', label: 'Estratégico' },
+  { value: 'tactical', label: 'Tático' },
+  { value: 'operational', label: 'Operacional' },
+];
+
+const allowedParentTypes: Record<string, string> = {
+  tactical: 'strategic',
+  operational: 'tactical',
+};
+
 export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: EditOKRFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletedKRIds, setDeletedKRIds] = useState<string[]>([]);
