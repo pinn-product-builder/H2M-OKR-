@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useSectors, useCycles, useCreateObjective, useCreateKeyResult, useProfiles } from '@/hooks/useSupabaseData';
+import { useSectors, useCycles, useCreateObjective, useCreateKeyResult, useProfiles, useObjectives } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
