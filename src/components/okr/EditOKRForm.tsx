@@ -376,6 +376,51 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="okrType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de OKR *</FormLabel>
+                      <Select onValueChange={(v) => { field.onChange(v); form.setValue('parentId', ''); }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {okrTypeOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {availableParents.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="parentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>OKR Pai</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Vincular a um OKR pai" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum</SelectItem>
+                            {availableParents.map(obj => (
+                              <SelectItem key={obj.id} value={obj.id}>{obj.title}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
             </div>
 
