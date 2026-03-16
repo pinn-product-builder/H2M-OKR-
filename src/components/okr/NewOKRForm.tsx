@@ -57,6 +57,17 @@ const krTypeOptions = [
   { value: 'percentage', label: 'Percentual' },
 ];
 
+const okrTypeOptions = [
+  { value: 'strategic', label: 'Estratégico', description: 'Objetivos de alto nível da organização' },
+  { value: 'tactical', label: 'Tático', description: 'Desdobramentos por área/departamento' },
+  { value: 'operational', label: 'Operacional', description: 'Ações e execução no dia a dia' },
+];
+
+const allowedParentTypes: Record<string, string> = {
+  tactical: 'strategic',
+  operational: 'tactical',
+};
+
 interface NewOKRFormProps {
   trigger?: React.ReactNode;
 }
