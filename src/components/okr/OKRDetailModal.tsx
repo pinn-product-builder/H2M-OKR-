@@ -32,6 +32,7 @@ interface OKRDetailModalProps {
   objective: Objective;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  rawObjective?: any;
 }
 
 export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModalProps) {
