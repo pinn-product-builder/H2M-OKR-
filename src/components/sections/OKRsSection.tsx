@@ -82,6 +82,7 @@ export function OKRsSection() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('ativos');
   
   const activeCycles = useMemo(() => cycles.filter(c => !c.is_archived), [cycles]);
