@@ -102,13 +102,16 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
 
   const activeCycles = cycles.filter(c => !c.is_archived);
 
-  const watchedOkrType = form.watch('okrType');
-  
-  const availableParents = useMemo(() => {
-    const requiredParentType = allowedParentTypes[watchedOkrType];
-    if (!requiredParentType) return [];
-    return allObjectives.filter(o => (o as any).okr_type === requiredParentType && o.id !== objective.id);
-  }, [allObjectives, watchedOkrType, objective.id]);
+  const krMapper = (krs: any[]) => krs.map((kr: any) => ({
+    id: kr.id,
+    title: kr.title,
+    type: (('type' in kr ? kr.type : 'numeric') as 'numeric' | 'percentage'),
+    currentValue: 'current_value' in kr ? kr.current_value : kr.current || 0,
+    target: 'target_value' in kr ? kr.target_value : kr.target || 0,
+    baseline: 'baseline_value' in kr ? kr.baseline_value : kr.baseline || 0,
+    unit: kr.unit || '',
+    ownerId: ('owner_id' in kr ? kr.owner_id : '') || '',
+  }));
 
   const form = useForm<EditOKRData>({
     resolver: zodResolver(editOKRSchema),
@@ -119,18 +122,19 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
       ownerId: rawObjective?.owner_id || '',
       period: rawObjective?.cycle_id || '',
       priority: objective.priority || 'medium',
-      keyResults: (rawObjective?.key_results || objective.keyResults || []).map(kr => ({
-        id: kr.id,
-        title: kr.title,
-        type: (('type' in kr ? kr.type : 'numeric') as 'numeric' | 'percentage'),
-        currentValue: 'current_value' in kr ? kr.current_value : (kr as any).current || 0,
-        target: 'target_value' in kr ? kr.target_value : (kr as any).target || 0,
-        baseline: 'baseline_value' in kr ? kr.baseline_value : (kr as any).baseline || 0,
-        unit: kr.unit || '',
-        ownerId: ('owner_id' in kr ? kr.owner_id : '') || '',
-      })),
+      okrType: (rawObjective?.okr_type as any) || objective.okrType || 'operational',
+      parentId: rawObjective?.parent_id || objective.parentId || '',
+      keyResults: krMapper(rawObjective?.key_results || objective.keyResults || []),
     },
   });
+
+  const watchedOkrType = form.watch('okrType');
+  
+  const availableParents = useMemo(() => {
+    const requiredParentType = allowedParentTypes[watchedOkrType];
+    if (!requiredParentType) return [];
+    return allObjectives.filter(o => (o as any).okr_type === requiredParentType && o.id !== objective.id);
+  }, [allObjectives, watchedOkrType, objective.id]);
 
   // Reset form when objective changes
   useEffect(() => {
@@ -143,16 +147,9 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
         ownerId: rawObjective?.owner_id || '',
         period: rawObjective?.cycle_id || '',
         priority: objective.priority || 'medium',
-        keyResults: (rawObjective?.key_results || objective.keyResults || []).map(kr => ({
-          id: kr.id,
-          title: kr.title,
-          type: (('type' in kr ? kr.type : 'numeric') as 'numeric' | 'percentage'),
-          currentValue: 'current_value' in kr ? kr.current_value : (kr as any).current || 0,
-          target: 'target_value' in kr ? kr.target_value : (kr as any).target || 0,
-          baseline: 'baseline_value' in kr ? kr.baseline_value : (kr as any).baseline || 0,
-          unit: kr.unit || '',
-          ownerId: ('owner_id' in kr ? kr.owner_id : '') || '',
-        })),
+        okrType: (rawObjective?.okr_type as any) || objective.okrType || 'operational',
+        parentId: rawObjective?.parent_id || objective.parentId || '',
+        keyResults: krMapper(rawObjective?.key_results || objective.keyResults || []),
       });
     }
   }, [open, objective.id]);
