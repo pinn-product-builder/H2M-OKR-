@@ -95,11 +95,20 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
   const { data: sectors = [] } = useSectors();
   const { data: cycles = [] } = useCycles();
   const { data: profiles = [] } = useProfiles();
+  const { data: allObjectives = [] } = useObjectives();
   const updateObjective = useUpdateObjective();
   const updateKeyResult = useUpdateKeyResult();
   const createKeyResult = useCreateKeyResult();
 
   const activeCycles = cycles.filter(c => !c.is_archived);
+
+  const watchedOkrType = form.watch('okrType');
+  
+  const availableParents = useMemo(() => {
+    const requiredParentType = allowedParentTypes[watchedOkrType];
+    if (!requiredParentType) return [];
+    return allObjectives.filter(o => (o as any).okr_type === requiredParentType && o.id !== objective.id);
+  }, [allObjectives, watchedOkrType, objective.id]);
 
   const form = useForm<EditOKRData>({
     resolver: zodResolver(editOKRSchema),
