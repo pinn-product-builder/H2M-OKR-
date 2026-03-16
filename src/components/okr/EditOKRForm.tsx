@@ -182,7 +182,6 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
         okr_type: data.okrType,
         parent_id: data.parentId || null,
       } as any);
-      });
 
       // Delete removed KRs
       for (const krId of deletedKRIds) {
