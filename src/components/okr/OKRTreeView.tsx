@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronRight, GitBranch } from 'lucide-react';
 import { ProgressBar } from '@/components/dashboard/ProgressBar';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
+import { OKRDetailModal } from '@/components/okr/OKRDetailModal';
+import { calculateOKRProgressFromKRs, calculateKRProgress, getStatusFromProgress } from '@/lib/okr-calculations';
 
 interface TreeObjective {
   id: string;
@@ -38,22 +40,22 @@ function buildTree(objectives: any[], getSectorLabel: (id?: string) => string): 
   const map = new Map<string, TreeObjective>();
   const roots: TreeObjective[] = [];
 
-  // Create nodes
   for (const obj of objectives) {
+    const krs = obj.key_results || [];
+    const progress = calculateOKRProgressFromKRs(krs);
     map.set(obj.id, {
       id: obj.id,
       title: obj.title,
       okrType: obj.okr_type || 'operational',
-      progress: obj._calculatedProgress ?? obj.progress ?? 0,
-      status: obj._calculatedStatus ?? obj.status ?? 'on-track',
+      progress,
+      status: getStatusFromProgress(progress),
       sectorName: getSectorLabel(obj.sector_id),
       ownerName: obj.owner?.name || '',
-      krCount: obj.key_results?.length || 0,
+      krCount: krs.length,
       children: [],
     });
   }
 
-  // Build hierarchy
   for (const obj of objectives) {
     const node = map.get(obj.id)!;
     if (obj.parent_id && map.has(obj.parent_id)) {
@@ -63,7 +65,6 @@ function buildTree(objectives: any[], getSectorLabel: (id?: string) => string): 
     }
   }
 
-  // Sort: strategic first, then tactical, then operational
   const typeOrder = { strategic: 0, tactical: 1, operational: 2 };
   const sortFn = (a: TreeObjective, b: TreeObjective) =>
     (typeOrder[a.okrType as keyof typeof typeOrder] ?? 2) - (typeOrder[b.okrType as keyof typeof typeOrder] ?? 2);
@@ -76,11 +77,59 @@ function buildTree(objectives: any[], getSectorLabel: (id?: string) => string): 
   return roots;
 }
 
-function TreeNode({ node, depth, onSelect, objectivesMap }: { 
+function mapToDisplayObjective(obj: any, cycleName: string) {
+  const krs = obj.key_results || [];
+  const okrProgress = calculateOKRProgressFromKRs(krs);
+  return {
+    id: obj.id,
+    title: obj.title,
+    description: obj.description || '',
+    sector: obj.sector_id || '',
+    owner: obj.owner?.name || '',
+    period: cycleName,
+    priority: (obj.priority as 'high' | 'medium' | 'low') || 'medium',
+    okrType: obj.okr_type,
+    progress: okrProgress,
+    status: getStatusFromProgress(okrProgress) as any,
+    createdAt: obj.created_at,
+    updatedAt: obj.updated_at,
+    keyResults: krs.map((kr: any) => {
+      const krProgress = calculateKRProgress(kr.current_value, kr.target_value, kr.type, kr.tasks);
+      return {
+        id: kr.id,
+        title: kr.title,
+        type: kr.type as any,
+        current: kr.current_value,
+        target: kr.target_value,
+        baseline: kr.baseline_value ?? 0,
+        unit: kr.unit || '',
+        owner: kr.owner?.name || '',
+        progress: krProgress,
+        status: getStatusFromProgress(krProgress) as any,
+        lastUpdate: kr.updated_at,
+        tasks: (kr.tasks || []).map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          description: t.description,
+          assignedTo: t.assignee_id || '',
+          assignedToName: t.assignee?.name || '',
+          dueDate: t.due_date,
+          priority: t.priority as any,
+          status: t.status as any,
+          createdAt: t.created_at,
+          completedAt: t.completed_at,
+          parentKRId: t.key_result_id,
+          parentOKRId: obj.id,
+        })),
+      };
+    }),
+  };
+}
+
+function TreeNode({ node, depth, onSelect }: { 
   node: TreeObjective; 
   depth: number; 
-  onSelect: (obj: any) => void;
-  objectivesMap: Map<string, any>;
+  onSelect: (id: string) => void;
 }) {
   return (
     <div>
@@ -91,7 +140,7 @@ function TreeNode({ node, depth, onSelect, objectivesMap }: {
           depth === 0 && "bg-card shadow-sm border-border",
         )}
         style={{ marginLeft: depth * 24 }}
-        onClick={() => onSelect(objectivesMap.get(node.id))}
+        onClick={() => onSelect(node.id)}
       >
         {depth > 0 && (
           <div className="flex items-center gap-1 text-muted-foreground/40">
@@ -129,13 +178,7 @@ function TreeNode({ node, depth, onSelect, objectivesMap }: {
       {node.children.length > 0 && (
         <div className="mt-1 space-y-1">
           {node.children.map(child => (
-            <TreeNode
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              onSelect={onSelect}
-              objectivesMap={objectivesMap}
-            />
+            <TreeNode key={child.id} node={child} depth={depth + 1} onSelect={onSelect} />
           ))}
         </div>
       )}
@@ -144,6 +187,8 @@ function TreeNode({ node, depth, onSelect, objectivesMap }: {
 }
 
 export function OKRTreeView({ objectives, onSelect, getSectorLabel }: OKRTreeViewProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const tree = useMemo(() => buildTree(objectives, getSectorLabel), [objectives, getSectorLabel]);
   
   const objectivesMap = useMemo(() => {
@@ -151,6 +196,9 @@ export function OKRTreeView({ objectives, onSelect, getSectorLabel }: OKRTreeVie
     for (const obj of objectives) map.set(obj.id, obj);
     return map;
   }, [objectives]);
+
+  const selectedRaw = selectedId ? objectivesMap.get(selectedId) : null;
+  const selectedDisplay = selectedRaw ? mapToDisplayObjective(selectedRaw, '') : null;
 
   if (tree.length === 0) {
     return (
@@ -163,16 +211,26 @@ export function OKRTreeView({ objectives, onSelect, getSectorLabel }: OKRTreeVie
   }
 
   return (
-    <div className="space-y-2">
-      {tree.map(node => (
-        <TreeNode
-          key={node.id}
-          node={node}
-          depth={0}
-          onSelect={onSelect}
-          objectivesMap={objectivesMap}
+    <>
+      <div className="space-y-2">
+        {tree.map(node => (
+          <TreeNode
+            key={node.id}
+            node={node}
+            depth={0}
+            onSelect={(id) => setSelectedId(id)}
+          />
+        ))}
+      </div>
+      
+      {selectedDisplay && (
+        <OKRDetailModal
+          objective={selectedDisplay}
+          open={!!selectedId}
+          onOpenChange={(open) => { if (!open) setSelectedId(null); }}
+          rawObjective={selectedRaw}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 }
