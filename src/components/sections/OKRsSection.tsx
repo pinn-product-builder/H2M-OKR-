@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2, User } from 'lucide-react';
+import { Search, LayoutGrid, List, Target, CheckCircle, AlertTriangle, AlertCircle, FolderArchive, RotateCcw, Loader2, User, GitBranch } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { OKRTreeView } from '@/components/okr/OKRTreeView';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -79,10 +80,11 @@ export function OKRsSection() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Filter state
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'tree'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('ativos');
   
   const activeCycles = useMemo(() => cycles.filter(c => !c.is_archived), [cycles]);
@@ -125,7 +127,7 @@ export function OKRsSection() {
     cycleId: selectedCycleId,
     status: statusFilter === 'all' ? [] : [statusFilter as OKRViewFilters['status'][0]],
     search: searchTerm,
-    viewMode,
+    viewMode: viewMode === 'tree' ? 'grid' : viewMode,
   }), [selectedCycleId, statusFilter, searchTerm, viewMode]);
 
   // Handle view selection
@@ -157,9 +159,10 @@ export function OKRsSection() {
       const matchesSearch = obj.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || obj.status === statusFilter;
       const matchesOwner = ownerFilter === 'all' || obj.owner_id === ownerFilter;
-      return matchesSearch && matchesStatus && matchesOwner;
+      const matchesType = typeFilter === 'all' || (obj as any).okr_type === typeFilter;
+      return matchesSearch && matchesStatus && matchesOwner && matchesType;
     });
-  }, [objectives, searchTerm, statusFilter, ownerFilter]);
+  }, [objectives, searchTerm, statusFilter, ownerFilter, typeFilter]);
 
   const filteredArchivedObjectives = useMemo(() => {
     return archivedObjectives.filter(obj => {
@@ -332,6 +335,20 @@ export function OKRsSection() {
                   <SelectItem value="critical">Crítico</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={typeFilter} onValueChange={(value) => {
+                setTypeFilter(value);
+                handleFilterChange();
+              }}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="strategic">Estratégico</SelectItem>
+                  <SelectItem value="tactical">Tático</SelectItem>
+                  <SelectItem value="operational">Operacional</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={ownerFilter} onValueChange={(value) => {
                 setOwnerFilter(value);
                 handleFilterChange();
@@ -373,6 +390,17 @@ export function OKRsSection() {
                 >
                   <List className="w-4 h-4" />
                 </Button>
+                <Button 
+                  variant={viewMode === 'tree' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('tree');
+                    handleFilterChange();
+                  }}
+                  title="Árvore hierárquica"
+                >
+                  <GitBranch className="w-4 h-4" />
+                </Button>
               </div>
               <NewOKRForm />
             </div>
@@ -380,7 +408,15 @@ export function OKRsSection() {
 
           {/* OKRs Content */}
           <div>
-            {filteredObjectives.length > 0 ? (
+            {viewMode === 'tree' ? (
+              <OKRTreeView
+                objectives={filteredObjectives}
+                onSelect={(obj) => {
+                  // Will be handled by tree view click -> opens detail modal
+                }}
+                getSectorLabel={getSectorLabel}
+              />
+            ) : filteredObjectives.length > 0 ? (
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {filteredObjectives.map((objective, index) => (
                   <OKRCard 
@@ -397,6 +433,7 @@ export function OKRsSection() {
                         owner: objective.owner?.name || '',
                         period: getSelectedCycleName(),
                         priority: (objective.priority as 'high' | 'medium' | 'low') || 'medium',
+                        okrType: (objective as any).okr_type as any,
                         progress: okrProgress,
                         status: getStatusFromProgress(okrProgress) as any,
                         createdAt: objective.created_at,
