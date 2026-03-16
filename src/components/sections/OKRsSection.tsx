@@ -127,7 +127,7 @@ export function OKRsSection() {
     cycleId: selectedCycleId,
     status: statusFilter === 'all' ? [] : [statusFilter as OKRViewFilters['status'][0]],
     search: searchTerm,
-    viewMode,
+    viewMode: viewMode === 'tree' ? 'grid' : viewMode,
   }), [selectedCycleId, statusFilter, searchTerm, viewMode]);
 
   // Handle view selection
