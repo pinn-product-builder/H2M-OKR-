@@ -35,9 +35,10 @@ interface OKRDetailModalProps {
   rawObjective?: any;
 }
 
-export function OKRDetailModal({ objective, open, onOpenChange }: OKRDetailModalProps) {
+export function OKRDetailModal({ objective, open, onOpenChange, rawObjective }: OKRDetailModalProps) {
   const [expandedKRs, setExpandedKRs] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { data: sectors = [] } = useSectors();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
