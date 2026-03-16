@@ -82,6 +82,7 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
   const { data: sectors = [] } = useSectors();
   const { data: cycles = [] } = useCycles();
   const { data: profiles = [] } = useProfiles();
+  const { data: allObjectives = [] } = useObjectives();
   const createObjective = useCreateObjective();
   const createKeyResult = useCreateKeyResult();
   const { parseDocument, isLoading: isParsing, clearResult } = useDocumentParser();
@@ -97,11 +98,22 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
       ownerId: '',
       period: '',
       priority: 'medium',
+      okrType: 'operational',
+      parentId: '',
       keyResults: [
         { title: '', type: 'numeric', target: 0, baseline: 0, unit: '', ownerId: '' }
       ],
     },
   });
+
+  const watchedOkrType = form.watch('okrType');
+  
+  // Filter parent objectives based on hierarchy rules
+  const availableParents = useMemo(() => {
+    const requiredParentType = allowedParentTypes[watchedOkrType];
+    if (!requiredParentType) return [];
+    return allObjectives.filter(o => (o as any).okr_type === requiredParentType);
+  }, [allObjectives, watchedOkrType]);
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
