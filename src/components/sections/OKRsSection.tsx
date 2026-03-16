@@ -381,7 +381,8 @@ export function OKRsSection() {
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {filteredObjectives.map((objective, index) => (
                   <OKRCard 
-                    key={objective.id} 
+                    key={objective.id}
+                    rawObjective={objective}
                     objective={(() => {
                       const krs = objective.key_results || [];
                       const okrProgress = calculateOKRProgressFromKRs(krs);
