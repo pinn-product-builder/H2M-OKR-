@@ -43,6 +43,7 @@ export interface Objective {
   sector_id?: string;
   owner_id?: string;
   parent_id?: string;
+  okr_type?: 'strategic' | 'tactical' | 'operational';
   status: 'on-track' | 'attention' | 'critical' | 'completed';
   progress: number;
   priority?: 'high' | 'medium' | 'low' | null;

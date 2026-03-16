@@ -491,6 +491,7 @@ export type Database = {
           due_date: string | null
           id: string
           is_archived: boolean | null
+          okr_type: string
           owner_id: string | null
           parent_id: string | null
           priority: string | null
@@ -508,6 +509,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_archived?: boolean | null
+          okr_type?: string
           owner_id?: string | null
           parent_id?: string | null
           priority?: string | null
@@ -525,6 +527,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_archived?: boolean | null
+          okr_type?: string
           owner_id?: string | null
           parent_id?: string | null
           priority?: string | null

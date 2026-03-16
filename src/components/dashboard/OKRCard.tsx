@@ -99,6 +99,16 @@ export function OKRCard({ objective, index, rawObjective }: OKRCardProps) {
               <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
                 {sectorLabel}
               </span>
+              {objective.okrType && (
+                <span className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
+                  objective.okrType === 'strategic' && "bg-primary/10 text-primary border-primary/20",
+                  objective.okrType === 'tactical' && "bg-warning/10 text-warning border-warning/20",
+                  objective.okrType === 'operational' && "bg-muted text-muted-foreground border-border",
+                )}>
+                  {objective.okrType === 'strategic' ? 'Estratégico' : objective.okrType === 'tactical' ? 'Tático' : 'Operacional'}
+                </span>
+              )}
               <StatusBadge status={objective.status} size="sm" />
               
               {/* Trend Indicator */}

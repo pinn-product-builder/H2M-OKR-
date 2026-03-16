@@ -2,6 +2,8 @@ export type OKRStatus = 'on-track' | 'attention' | 'critical' | 'completed';
 
 export type KRType = 'numeric' | 'percentage';
 
+export type OKRType = 'strategic' | 'tactical' | 'operational';
+
 export type TaskStatus = 'pending' | 'in-progress' | 'completed';
 export type TaskPriority = 'high' | 'medium' | 'low';
 
@@ -57,6 +59,8 @@ export interface Objective {
   owner: string;
   period: string;
   priority: 'high' | 'medium' | 'low';
+  okrType?: OKRType;
+  parentId?: string;
   keyResults: KeyResult[];
   progress: number;
   status: OKRStatus;

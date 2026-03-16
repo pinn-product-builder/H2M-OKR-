@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useSectors, useCycles, useCreateObjective, useCreateKeyResult, useProfiles } from '@/hooks/useSupabaseData';
+import { useSectors, useCycles, useCreateObjective, useCreateKeyResult, useProfiles, useObjectives } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,8 @@ const okrFormSchema = z.object({
   priority: z.enum(['high', 'medium', 'low'], {
     required_error: 'Selecione uma prioridade',
   }),
+  okrType: z.enum(['strategic', 'tactical', 'operational']),
+  parentId: z.string().optional(),
   keyResults: z.array(keyResultSchema).min(1, 'Adicione pelo menos 1 Key Result').max(5, 'Máximo de 5 Key Results'),
 });
 
@@ -55,6 +57,17 @@ const krTypeOptions = [
   { value: 'percentage', label: 'Percentual' },
 ];
 
+const okrTypeOptions = [
+  { value: 'strategic', label: 'Estratégico', description: 'Objetivos de alto nível da organização' },
+  { value: 'tactical', label: 'Tático', description: 'Desdobramentos por área/departamento' },
+  { value: 'operational', label: 'Operacional', description: 'Ações e execução no dia a dia' },
+];
+
+const allowedParentTypes: Record<string, string> = {
+  tactical: 'strategic',
+  operational: 'tactical',
+};
+
 interface NewOKRFormProps {
   trigger?: React.ReactNode;
 }
@@ -69,6 +82,7 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
   const { data: sectors = [] } = useSectors();
   const { data: cycles = [] } = useCycles();
   const { data: profiles = [] } = useProfiles();
+  const { data: allObjectives = [] } = useObjectives();
   const createObjective = useCreateObjective();
   const createKeyResult = useCreateKeyResult();
   const { parseDocument, isLoading: isParsing, clearResult } = useDocumentParser();
@@ -84,11 +98,22 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
       ownerId: '',
       period: '',
       priority: 'medium',
+      okrType: 'operational',
+      parentId: '',
       keyResults: [
         { title: '', type: 'numeric', target: 0, baseline: 0, unit: '', ownerId: '' }
       ],
     },
   });
+
+  const watchedOkrType = form.watch('okrType');
+  
+  // Filter parent objectives based on hierarchy rules
+  const availableParents = useMemo(() => {
+    const requiredParentType = allowedParentTypes[watchedOkrType];
+    if (!requiredParentType) return [];
+    return allObjectives.filter(o => (o as any).okr_type === requiredParentType);
+  }, [allObjectives, watchedOkrType]);
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -167,7 +192,9 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
         status: 'on-track',
         progress: 0,
         priority: data.priority,
-      });
+        okr_type: data.okrType,
+        parent_id: data.parentId || null,
+      } as any);
 
       // Then create the key results with owner_id and baseline_value
       for (const kr of data.keyResults) {
@@ -369,6 +396,66 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="okrType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de OKR *</FormLabel>
+                      <Select onValueChange={(v) => {
+                        field.onChange(v);
+                        // Clear parent if type changed and parent is no longer valid
+                        form.setValue('parentId', '');
+                      }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {okrTypeOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-[11px]">
+                        {okrTypeOptions.find(o => o.value === field.value)?.description}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {availableParents.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="parentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>OKR Pai (opcional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Vincular a um OKR pai" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum</SelectItem>
+                            {availableParents.map(obj => (
+                              <SelectItem key={obj.id} value={obj.id}>
+                                {obj.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
             </div>
 
