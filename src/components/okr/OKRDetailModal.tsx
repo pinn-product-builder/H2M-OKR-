@@ -282,6 +282,14 @@ export function OKRDetailModal({ objective, open, onOpenChange, rawObjective }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Dialog */}
+      <EditOKRForm
+        objective={objective}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        rawObjective={rawObjective}
+      />
     </Dialog>
   );
 }
