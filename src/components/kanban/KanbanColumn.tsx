@@ -34,7 +34,7 @@ export function KanbanColumn({ title, status, tasks, color, icon, onStatusChange
 
   return (
     <div
-      className="flex flex-col bg-muted/30 rounded-xl border border-border/50 min-w-[280px] max-w-[320px] flex-1 transition-all"
+      className="flex flex-col bg-muted/30 rounded-xl border border-border/50 min-w-[320px] max-w-[380px] flex-1 transition-all"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
