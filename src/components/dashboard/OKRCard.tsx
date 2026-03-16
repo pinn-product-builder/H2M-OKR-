@@ -56,7 +56,7 @@ function calculateTrend(data: { progress: number | null }[]): 'up' | 'down' | 's
   return 'stable';
 }
 
-export function OKRCard({ objective, index }: OKRCardProps) {
+export function OKRCard({ objective, index, rawObjective }: OKRCardProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { data: sectors = [] } = useSectors();
   
