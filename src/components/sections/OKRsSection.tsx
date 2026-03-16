@@ -390,6 +390,17 @@ export function OKRsSection() {
                 >
                   <List className="w-4 h-4" />
                 </Button>
+                <Button 
+                  variant={viewMode === 'tree' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('tree');
+                    handleFilterChange();
+                  }}
+                  title="Árvore hierárquica"
+                >
+                  <GitBranch className="w-4 h-4" />
+                </Button>
               </div>
               <NewOKRForm />
             </div>
