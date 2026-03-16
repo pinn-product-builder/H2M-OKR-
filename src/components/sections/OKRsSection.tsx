@@ -332,6 +332,20 @@ export function OKRsSection() {
                   <SelectItem value="critical">Crítico</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={ownerFilter} onValueChange={(value) => {
+                setOwnerFilter(value);
+                handleFilterChange();
+              }}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {profiles.map(p => (
+                    <SelectItem key={p.user_id} value={p.user_id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="flex items-center gap-2">
