@@ -46,6 +46,7 @@ const Index = () => {
         <div className="p-6">
           {currentSection === 'dashboard' && <Dashboard />}
           {currentSection === 'okrs' && <OKRsSection />}
+          {currentSection === 'kanban' && <KanbanBoard />}
           {currentSection === 'usuarios' && <UsuariosSection />}
           {currentSection === 'configuracoes' && <ConfiguracoesSection />}
         </div>

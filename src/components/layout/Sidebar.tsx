@@ -17,7 +17,7 @@ interface SidebarProps {
 const mainNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'okrs', label: 'OKRs', icon: Target },
-  // { id: 'datasource', label: 'Data Source', icon: Database }, // Oculto por decisão do cliente
+  { id: 'kanban', label: 'Tarefas', icon: Kanban },
 ];
 
 const systemItems = [
