@@ -665,6 +665,7 @@ export type Database = {
           id: string
           key_result_id: string
           priority: string | null
+          start_date: string | null
           status: string | null
           title: string
           updated_at: string | null
@@ -678,6 +679,7 @@ export type Database = {
           id?: string
           key_result_id: string
           priority?: string | null
+          start_date?: string | null
           status?: string | null
           title: string
           updated_at?: string | null
@@ -691,6 +693,7 @@ export type Database = {
           id?: string
           key_result_id?: string
           priority?: string | null
+          start_date?: string | null
           status?: string | null
           title?: string
           updated_at?: string | null
