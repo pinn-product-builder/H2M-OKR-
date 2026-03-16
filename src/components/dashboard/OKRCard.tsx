@@ -216,7 +216,8 @@ export function OKRCard({ objective, index, rawObjective }: OKRCardProps) {
       <OKRDetailModal 
         objective={objective} 
         open={isDetailOpen} 
-        onOpenChange={setIsDetailOpen} 
+        onOpenChange={setIsDetailOpen}
+        rawObjective={rawObjective}
       />
     </>
   );
