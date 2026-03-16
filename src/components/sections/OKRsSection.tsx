@@ -159,9 +159,10 @@ export function OKRsSection() {
       const matchesSearch = obj.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || obj.status === statusFilter;
       const matchesOwner = ownerFilter === 'all' || obj.owner_id === ownerFilter;
-      return matchesSearch && matchesStatus && matchesOwner;
+      const matchesType = typeFilter === 'all' || (obj as any).okr_type === typeFilter;
+      return matchesSearch && matchesStatus && matchesOwner && matchesType;
     });
-  }, [objectives, searchTerm, statusFilter, ownerFilter]);
+  }, [objectives, searchTerm, statusFilter, ownerFilter, typeFilter]);
 
   const filteredArchivedObjectives = useMemo(() => {
     return archivedObjectives.filter(obj => {
