@@ -336,8 +336,11 @@ export function OKRsSection() {
                 setOwnerFilter(value);
                 handleFilterChange();
               }}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Responsável" />
+                <SelectTrigger className="w-[190px]">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Responsável" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
