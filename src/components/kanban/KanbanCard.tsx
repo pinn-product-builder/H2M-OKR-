@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { User, Calendar } from 'lucide-react';
+import { User, Calendar, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProfiles } from '@/hooks/useSupabaseData';
@@ -40,44 +40,65 @@ export function KanbanCard({ task, onStatusChange }: KanbanCardProps) {
   const pConfig = priorityConfig[task.priority as keyof typeof priorityConfig] || priorityConfig.medium;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group">
+    <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group space-y-3">
       {/* Sector & Priority */}
-      <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="flex items-center justify-between gap-2">
         {sectorName && (
           <span
-            className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+            className="text-[11px] font-semibold px-2 py-0.5 rounded-md"
             style={{ backgroundColor: sectorColor + '20', color: sectorColor }}
           >
             {sectorName}
           </span>
         )}
-        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-4', pConfig.className)}>
+        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-5', pConfig.className)}>
           {pConfig.label}
         </Badge>
       </div>
 
       {/* Title */}
-      <p className="text-sm font-medium text-foreground mb-1 line-clamp-2">{task.title}</p>
+      <p className="text-sm font-semibold text-foreground leading-snug">{task.title}</p>
 
-      {/* OKR/KR context */}
-      {okrTitle && (
-        <p className="text-[11px] text-muted-foreground mb-2 line-clamp-1">
-          {okrTitle} → {krTitle}
+      {/* Description */}
+      {task.description && (
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+          {task.description}
         </p>
       )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2 pt-2 border-t border-border/50">
-        <div className="flex items-center gap-1">
-          <User className="w-3 h-3" />
-          <span className="truncate max-w-[100px]">{assigneeName}</span>
+      {/* OKR/KR context */}
+      {okrTitle && (
+        <div className="bg-muted/50 rounded-md px-2.5 py-1.5 space-y-0.5">
+          <p className="text-[11px] font-medium text-foreground/80 line-clamp-1">{okrTitle}</p>
+          {krTitle && (
+            <p className="text-[10px] text-muted-foreground line-clamp-1 flex items-center gap-1">
+              <ArrowRight className="w-2.5 h-2.5 shrink-0" />
+              {krTitle}
+            </p>
+          )}
         </div>
-        {task.due_date && (
-          <div className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            <span>{formatDate(task.due_date)}</span>
-          </div>
-        )}
+      )}
+
+      {/* Dates */}
+      {(task.start_date || task.due_date) && (
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Calendar className="w-3 h-3 shrink-0" />
+          {task.start_date && task.due_date ? (
+            <span className="flex items-center gap-1">
+              {formatDate(task.start_date)}
+              <ArrowRight className="w-2.5 h-2.5" />
+              {formatDate(task.due_date)}
+            </span>
+          ) : (
+            <span>{formatDate(task.start_date || task.due_date)}</span>
+          )}
+        </div>
+      )}
+
+      {/* Footer: Assignee */}
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-2 border-t border-border/50">
+        <User className="w-3 h-3 shrink-0" />
+        <span className="truncate">{assigneeName}</span>
       </div>
     </div>
   );
