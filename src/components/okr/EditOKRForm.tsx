@@ -179,6 +179,9 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
         owner_id: data.ownerId,
         cycle_id: data.period,
         priority: data.priority,
+        okr_type: data.okrType,
+        parent_id: data.parentId || null,
+      } as any);
       });
 
       // Delete removed KRs
