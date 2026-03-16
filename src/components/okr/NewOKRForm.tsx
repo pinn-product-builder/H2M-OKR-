@@ -192,7 +192,9 @@ export function NewOKRForm({ trigger }: NewOKRFormProps) {
         status: 'on-track',
         progress: 0,
         priority: data.priority,
-      });
+        okr_type: data.okrType,
+        parent_id: data.parentId || null,
+      } as any);
 
       // Then create the key results with owner_id and baseline_value
       for (const kr of data.keyResults) {
