@@ -52,11 +52,12 @@ interface EditOKRFormProps {
   objective: Objective;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Raw supabase objective for owner_id mapping */
   rawObjective?: {
     owner_id?: string;
     cycle_id?: string;
     sector_id?: string;
+    okr_type?: string;
+    parent_id?: string;
     key_results?: Array<{
       id: string;
       title: string;
