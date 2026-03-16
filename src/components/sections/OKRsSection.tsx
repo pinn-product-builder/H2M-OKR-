@@ -1,4 +1,4 @@
-import { useSectors, useCycles, useObjectives, useArchivedObjectives, useUpdateObjective } from '@/hooks/useSupabaseData';
+import { useSectors, useCycles, useObjectives, useArchivedObjectives, useUpdateObjective, useProfiles } from '@/hooks/useSupabaseData';
 import { useUserViews, useDefaultView, useUpdateView } from '@/hooks/useViews';
 import { OKRCard } from '@/components/dashboard/OKRCard';
 import { NewOKRForm } from '@/components/okr/NewOKRForm';
