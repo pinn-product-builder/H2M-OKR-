@@ -11,6 +11,7 @@ import { OKRDetailModal } from '@/components/okr/OKRDetailModal';
 interface OKRCardProps {
   objective: Objective;
   index: number;
+  rawObjective?: any;
 }
 
 // Generate mock weekly progress data based on current progress
