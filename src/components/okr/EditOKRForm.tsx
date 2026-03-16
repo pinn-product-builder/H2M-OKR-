@@ -41,6 +41,8 @@ const editOKRSchema = z.object({
   ownerId: z.string().min(1),
   period: z.string().min(1),
   priority: z.enum(['high', 'medium', 'low']),
+  okrType: z.enum(['strategic', 'tactical', 'operational']),
+  parentId: z.string().optional(),
   keyResults: z.array(keyResultSchema).min(1).max(5),
 });
 
