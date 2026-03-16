@@ -335,6 +335,20 @@ export function OKRsSection() {
                   <SelectItem value="critical">Crítico</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={typeFilter} onValueChange={(value) => {
+                setTypeFilter(value);
+                handleFilterChange();
+              }}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="strategic">Estratégico</SelectItem>
+                  <SelectItem value="tactical">Tático</SelectItem>
+                  <SelectItem value="operational">Operacional</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={ownerFilter} onValueChange={(value) => {
                 setOwnerFilter(value);
                 handleFilterChange();
