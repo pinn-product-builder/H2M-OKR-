@@ -408,7 +408,15 @@ export function OKRsSection() {
 
           {/* OKRs Content */}
           <div>
-            {filteredObjectives.length > 0 ? (
+            {viewMode === 'tree' ? (
+              <OKRTreeView
+                objectives={filteredObjectives}
+                onSelect={(obj) => {
+                  // Will be handled by tree view click -> opens detail modal
+                }}
+                getSectorLabel={getSectorLabel}
+              />
+            ) : filteredObjectives.length > 0 ? (
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {filteredObjectives.map((objective, index) => (
                   <OKRCard 
@@ -425,6 +433,7 @@ export function OKRsSection() {
                         owner: objective.owner?.name || '',
                         period: getSelectedCycleName(),
                         priority: (objective.priority as 'high' | 'medium' | 'low') || 'medium',
+                        okrType: (objective as any).okr_type as any,
                         progress: okrProgress,
                         status: getStatusFromProgress(okrProgress) as any,
                         createdAt: objective.created_at,
