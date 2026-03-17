@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
-import { User, Calendar, ArrowRight } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { User, Calendar, ArrowRight, Pencil } from 'lucide-react';
+import { EditTaskDialog } from '@/components/okr/EditTaskDialog';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProfiles } from '@/hooks/useSupabaseData';
