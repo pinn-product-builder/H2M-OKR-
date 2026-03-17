@@ -4,10 +4,11 @@ import { SectorOverview } from './SectorOverview';
 import { QuickStats } from './QuickStats';
 import { NewOKRForm } from '@/components/okr/NewOKRForm';
 import { TaskForm } from '@/components/okr/TaskForm';
-import { useObjectives, useSectors, useCycles } from '@/hooks/useSupabaseData';
-import { Plus, Filter, ListTodo } from 'lucide-react';
+import { useObjectives, useSectors, useCycles, useProfiles } from '@/hooks/useSupabaseData';
+import { Plus, Filter, ListTodo, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMemo, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
