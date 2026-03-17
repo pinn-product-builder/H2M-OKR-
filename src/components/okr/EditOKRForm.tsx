@@ -152,6 +152,14 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
   useEffect(() => {
     if (open) {
       setDeletedKRIds([]);
+      setLockedFields({
+        sector: true,
+        ownerId: true,
+        period: true,
+        priority: true,
+        okrType: true,
+        parentId: true,
+      });
       form.reset({
         title: objective.title,
         description: objective.description || '',
