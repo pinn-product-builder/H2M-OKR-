@@ -91,6 +91,18 @@ const allowedParentTypes: Record<string, string> = {
 export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: EditOKRFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletedKRIds, setDeletedKRIds] = useState<string[]>([]);
+  const [lockedFields, setLockedFields] = useState<Record<string, boolean>>({
+    sector: true,
+    ownerId: true,
+    period: true,
+    priority: true,
+    okrType: true,
+    parentId: true,
+  });
+
+  const toggleLock = (field: string) => {
+    setLockedFields(prev => ({ ...prev, [field]: !prev[field] }));
+  };
 
   const { data: sectors = [] } = useSectors();
   const { data: cycles = [] } = useCycles();
