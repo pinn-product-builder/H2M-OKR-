@@ -19,7 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Target, Loader2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Target, Loader2, Pencil, Lock, Unlock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Objective, KeyResult } from '@/types/okr';
 
@@ -91,6 +91,18 @@ const allowedParentTypes: Record<string, string> = {
 export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: EditOKRFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletedKRIds, setDeletedKRIds] = useState<string[]>([]);
+  const [lockedFields, setLockedFields] = useState<Record<string, boolean>>({
+    sector: true,
+    ownerId: true,
+    period: true,
+    priority: true,
+    okrType: true,
+    parentId: true,
+  });
+
+  const toggleLock = (field: string) => {
+    setLockedFields(prev => ({ ...prev, [field]: !prev[field] }));
+  };
 
   const { data: sectors = [] } = useSectors();
   const { data: cycles = [] } = useCycles();
@@ -140,6 +152,14 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
   useEffect(() => {
     if (open) {
       setDeletedKRIds([]);
+      setLockedFields({
+        sector: true,
+        ownerId: true,
+        period: true,
+        priority: true,
+        okrType: true,
+        parentId: true,
+      });
       form.reset({
         title: objective.title,
         description: objective.description || '',
@@ -288,10 +308,15 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                   name="sector"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Setor *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <FormLabel className="flex items-center justify-between">
+                        Setor *
+                        <button type="button" onClick={() => toggleLock('sector')} className="text-muted-foreground hover:text-foreground transition-colors" title={lockedFields.sector ? 'Desbloquear para editar' : 'Bloquear campo'}>
+                          {lockedFields.sector ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5 text-accent" />}
+                        </button>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockedFields.sector}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className={lockedFields.sector ? 'opacity-70' : ''}>
                             <SelectValue placeholder="Selecione o setor" />
                           </SelectTrigger>
                         </FormControl>
@@ -311,10 +336,15 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                   name="ownerId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Responsável *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <FormLabel className="flex items-center justify-between">
+                        Responsável *
+                        <button type="button" onClick={() => toggleLock('ownerId')} className="text-muted-foreground hover:text-foreground transition-colors" title={lockedFields.ownerId ? 'Desbloquear para editar' : 'Bloquear campo'}>
+                          {lockedFields.ownerId ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5 text-accent" />}
+                        </button>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockedFields.ownerId}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className={lockedFields.ownerId ? 'opacity-70' : ''}>
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                         </FormControl>
@@ -334,10 +364,15 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                   name="period"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ciclo *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <FormLabel className="flex items-center justify-between">
+                        Ciclo *
+                        <button type="button" onClick={() => toggleLock('period')} className="text-muted-foreground hover:text-foreground transition-colors" title={lockedFields.period ? 'Desbloquear para editar' : 'Bloquear campo'}>
+                          {lockedFields.period ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5 text-accent" />}
+                        </button>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockedFields.period}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className={lockedFields.period ? 'opacity-70' : ''}>
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                         </FormControl>
@@ -357,10 +392,15 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prioridade *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <FormLabel className="flex items-center justify-between">
+                        Prioridade *
+                        <button type="button" onClick={() => toggleLock('priority')} className="text-muted-foreground hover:text-foreground transition-colors" title={lockedFields.priority ? 'Desbloquear para editar' : 'Bloquear campo'}>
+                          {lockedFields.priority ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5 text-accent" />}
+                        </button>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockedFields.priority}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className={lockedFields.priority ? 'opacity-70' : ''}>
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -382,10 +422,15 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                   name="okrType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de OKR *</FormLabel>
-                      <Select onValueChange={(v) => { field.onChange(v); form.setValue('parentId', ''); }} value={field.value}>
+                      <FormLabel className="flex items-center justify-between">
+                        Tipo de OKR *
+                        <button type="button" onClick={() => toggleLock('okrType')} className="text-muted-foreground hover:text-foreground transition-colors" title={lockedFields.okrType ? 'Desbloquear para editar' : 'Bloquear campo'}>
+                          {lockedFields.okrType ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5 text-accent" />}
+                        </button>
+                      </FormLabel>
+                      <Select onValueChange={(v) => { field.onChange(v); form.setValue('parentId', ''); }} value={field.value} disabled={lockedFields.okrType}>
                         <FormControl>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger className={lockedFields.okrType ? 'opacity-70' : ''}><SelectValue /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {okrTypeOptions.map(opt => (
@@ -404,10 +449,15 @@ export function EditOKRForm({ objective, open, onOpenChange, rawObjective }: Edi
                     name="parentId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>OKR Pai</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <FormLabel className="flex items-center justify-between">
+                          OKR Pai
+                          <button type="button" onClick={() => toggleLock('parentId')} className="text-muted-foreground hover:text-foreground transition-colors" title={lockedFields.parentId ? 'Desbloquear para editar' : 'Bloquear campo'}>
+                            {lockedFields.parentId ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5 text-accent" />}
+                          </button>
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={lockedFields.parentId}>
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Vincular a um OKR pai" /></SelectTrigger>
+                            <SelectTrigger className={lockedFields.parentId ? 'opacity-70' : ''}><SelectValue placeholder="Vincular a um OKR pai" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="">Nenhum</SelectItem>
