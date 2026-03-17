@@ -45,7 +45,7 @@ export function Dashboard() {
     const attentionOkrs = filteredObjectives.filter(o => o.status === 'attention' || o.status === 'critical').length;
     
     // Count all tasks from key results
-    const allTasks = objectives.flatMap(o => 
+    const allTasks = filteredObjectives.flatMap(o => 
       (o.key_results || []).flatMap(kr => kr.tasks || [])
     );
     const onTimeTasks = allTasks.filter(t => t.status === 'completed' || (t.status !== 'blocked' && (!t.due_date || new Date(t.due_date) >= new Date()))).length;
