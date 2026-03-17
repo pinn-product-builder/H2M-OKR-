@@ -116,7 +116,7 @@ export function Dashboard() {
 
   // Transform objectives to old format for OKRCard
   const transformedObjectives = useMemo(() => {
-    return objectives.slice(0, 4).map(obj => ({
+    return filteredObjectives.slice(0, 4).map(obj => ({
       id: obj.id,
       title: obj.title,
       description: obj.description || '',
@@ -159,7 +159,7 @@ export function Dashboard() {
         };
       }),
     }));
-  }, [objectives, activeCycle]);
+  }, [filteredObjectives, activeCycle]);
 
   const isLoading = objectivesLoading || sectorsLoading;
 
