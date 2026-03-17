@@ -217,6 +217,20 @@ export function Dashboard() {
               OKRs Ativos {activeCycle && `- ${activeCycle.name}`}
             </h2>
             <div className="flex items-center gap-2">
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Responsável" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {profiles.map(p => (
+                    <SelectItem key={p.user_id} value={p.user_id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
