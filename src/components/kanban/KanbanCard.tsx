@@ -19,6 +19,7 @@ const priorityConfig = {
 };
 
 export function KanbanCard({ task, onStatusChange }: KanbanCardProps) {
+  const [editOpen, setEditOpen] = useState(false);
   const { data: profiles = [] } = useProfiles();
 
   const assigneeName = useMemo(() => {
