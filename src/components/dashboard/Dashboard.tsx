@@ -112,7 +112,7 @@ export function Dashboard() {
         critical: sectorObjectives.filter(o => { const p = calculateOKRProgressFromKRs(o.key_results || []); return p < 40; }).length,
       };
     }).filter(s => s.totalOKRs > 0);
-  }, [sectors, objectives]);
+  }, [sectors, filteredObjectives]);
 
   // Transform objectives to old format for OKRCard
   const transformedObjectives = useMemo(() => {
