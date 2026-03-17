@@ -41,8 +41,8 @@ export function Dashboard() {
 
   // Calculate metrics from real data
   const metrics: MetricCardType[] = useMemo(() => {
-    const onTrackOkrs = objectives.filter(o => o.status === 'on-track').length;
-    const attentionOkrs = objectives.filter(o => o.status === 'attention' || o.status === 'critical').length;
+    const onTrackOkrs = filteredObjectives.filter(o => o.status === 'on-track').length;
+    const attentionOkrs = filteredObjectives.filter(o => o.status === 'attention' || o.status === 'critical').length;
     
     // Count all tasks from key results
     const allTasks = objectives.flatMap(o => 
