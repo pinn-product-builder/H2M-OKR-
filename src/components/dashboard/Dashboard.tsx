@@ -94,7 +94,7 @@ export function Dashboard() {
   // Calculate sector summary from real data
   const sectorSummary: SectorSummary[] = useMemo(() => {
     return sectors.map(sector => {
-      const sectorObjectives = objectives.filter(o => o.sector_id === sector.id);
+      const sectorObjectives = filteredObjectives.filter(o => o.sector_id === sector.id);
       const avgProgress = sectorObjectives.length > 0 
         ? Math.round(sectorObjectives.reduce((sum, o) => {
             const okrProgress = calculateOKRProgressFromKRs(o.key_results || []);
