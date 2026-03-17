@@ -89,7 +89,7 @@ export function Dashboard() {
         variant: 'critical' as const,
       },
     ];
-  }, [objectives]);
+  }, [filteredObjectives]);
 
   // Calculate sector summary from real data
   const sectorSummary: SectorSummary[] = useMemo(() => {
