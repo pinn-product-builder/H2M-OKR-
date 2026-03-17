@@ -65,7 +65,7 @@ export function Dashboard() {
         id: '2',
         title: 'OKRs em Atraso',
         value: String(attentionOkrs),
-        change: objectives.length > 0 ? -Math.round((attentionOkrs / objectives.length) * 100) : 0,
+        change: filteredObjectives.length > 0 ? -Math.round((attentionOkrs / filteredObjectives.length) * 100) : 0,
         changeLabel: 'precisam atenção',
         icon: 'alert-triangle',
         variant: 'warning' as const,
