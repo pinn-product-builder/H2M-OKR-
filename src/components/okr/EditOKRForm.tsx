@@ -19,7 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Target, Loader2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Target, Loader2, Pencil, Lock, Unlock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Objective, KeyResult } from '@/types/okr';
 
