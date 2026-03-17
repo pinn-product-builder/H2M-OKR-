@@ -25,11 +25,19 @@ export function Dashboard() {
   const activeCycle = cycles.find(c => c.is_active && !c.is_archived);
   const { data: objectives = [], isLoading: objectivesLoading } = useObjectives(activeCycle?.id);
   const { data: sectors = [], isLoading: sectorsLoading } = useSectors();
+  const { data: profiles = [] } = useProfiles();
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<Record<string, boolean>>({
     'on-track': true,
     'attention': true,
     'critical': true,
   });
+
+  // Filter objectives by owner
+  const filteredObjectives = useMemo(() => {
+    if (ownerFilter === 'all') return objectives;
+    return objectives.filter(o => o.owner_id === ownerFilter);
+  }, [objectives, ownerFilter]);
 
   // Calculate metrics from real data
   const metrics: MetricCardType[] = useMemo(() => {
