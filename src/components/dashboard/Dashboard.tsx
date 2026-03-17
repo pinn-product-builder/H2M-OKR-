@@ -4,10 +4,11 @@ import { SectorOverview } from './SectorOverview';
 import { QuickStats } from './QuickStats';
 import { NewOKRForm } from '@/components/okr/NewOKRForm';
 import { TaskForm } from '@/components/okr/TaskForm';
-import { useObjectives, useSectors, useCycles } from '@/hooks/useSupabaseData';
-import { Plus, Filter, ListTodo } from 'lucide-react';
+import { useObjectives, useSectors, useCycles, useProfiles } from '@/hooks/useSupabaseData';
+import { Plus, Filter, ListTodo, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMemo, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,19 +25,27 @@ export function Dashboard() {
   const activeCycle = cycles.find(c => c.is_active && !c.is_archived);
   const { data: objectives = [], isLoading: objectivesLoading } = useObjectives(activeCycle?.id);
   const { data: sectors = [], isLoading: sectorsLoading } = useSectors();
+  const { data: profiles = [] } = useProfiles();
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<Record<string, boolean>>({
     'on-track': true,
     'attention': true,
     'critical': true,
   });
 
+  // Filter objectives by owner
+  const filteredObjectives = useMemo(() => {
+    if (ownerFilter === 'all') return objectives;
+    return objectives.filter(o => o.owner_id === ownerFilter);
+  }, [objectives, ownerFilter]);
+
   // Calculate metrics from real data
   const metrics: MetricCardType[] = useMemo(() => {
-    const onTrackOkrs = objectives.filter(o => o.status === 'on-track').length;
-    const attentionOkrs = objectives.filter(o => o.status === 'attention' || o.status === 'critical').length;
+    const onTrackOkrs = filteredObjectives.filter(o => o.status === 'on-track').length;
+    const attentionOkrs = filteredObjectives.filter(o => o.status === 'attention' || o.status === 'critical').length;
     
     // Count all tasks from key results
-    const allTasks = objectives.flatMap(o => 
+    const allTasks = filteredObjectives.flatMap(o => 
       (o.key_results || []).flatMap(kr => kr.tasks || [])
     );
     const onTimeTasks = allTasks.filter(t => t.status === 'completed' || (t.status !== 'blocked' && (!t.due_date || new Date(t.due_date) >= new Date()))).length;
@@ -47,8 +56,8 @@ export function Dashboard() {
         id: '1',
         title: 'OKRs no Prazo',
         value: String(onTrackOkrs),
-        change: objectives.length > 0 ? Math.round((onTrackOkrs / objectives.length) * 100) : 0,
-        changeLabel: `de ${objectives.length} OKRs ativos`,
+        change: filteredObjectives.length > 0 ? Math.round((onTrackOkrs / filteredObjectives.length) * 100) : 0,
+        changeLabel: `de ${filteredObjectives.length} OKRs ativos`,
         icon: 'target',
         variant: 'success' as const,
       },
@@ -56,7 +65,7 @@ export function Dashboard() {
         id: '2',
         title: 'OKRs em Atraso',
         value: String(attentionOkrs),
-        change: objectives.length > 0 ? -Math.round((attentionOkrs / objectives.length) * 100) : 0,
+        change: filteredObjectives.length > 0 ? -Math.round((attentionOkrs / filteredObjectives.length) * 100) : 0,
         changeLabel: 'precisam atenção',
         icon: 'alert-triangle',
         variant: 'warning' as const,
@@ -80,12 +89,12 @@ export function Dashboard() {
         variant: 'critical' as const,
       },
     ];
-  }, [objectives]);
+  }, [filteredObjectives]);
 
   // Calculate sector summary from real data
   const sectorSummary: SectorSummary[] = useMemo(() => {
     return sectors.map(sector => {
-      const sectorObjectives = objectives.filter(o => o.sector_id === sector.id);
+      const sectorObjectives = filteredObjectives.filter(o => o.sector_id === sector.id);
       const avgProgress = sectorObjectives.length > 0 
         ? Math.round(sectorObjectives.reduce((sum, o) => {
             const okrProgress = calculateOKRProgressFromKRs(o.key_results || []);
@@ -103,11 +112,11 @@ export function Dashboard() {
         critical: sectorObjectives.filter(o => { const p = calculateOKRProgressFromKRs(o.key_results || []); return p < 40; }).length,
       };
     }).filter(s => s.totalOKRs > 0);
-  }, [sectors, objectives]);
+  }, [sectors, filteredObjectives]);
 
   // Transform objectives to old format for OKRCard
   const transformedObjectives = useMemo(() => {
-    return objectives.slice(0, 4).map(obj => ({
+    return filteredObjectives.slice(0, 4).map(obj => ({
       id: obj.id,
       title: obj.title,
       description: obj.description || '',
@@ -150,7 +159,7 @@ export function Dashboard() {
         };
       }),
     }));
-  }, [objectives, activeCycle]);
+  }, [filteredObjectives, activeCycle]);
 
   const isLoading = objectivesLoading || sectorsLoading;
 
@@ -208,6 +217,20 @@ export function Dashboard() {
               OKRs Ativos {activeCycle && `- ${activeCycle.name}`}
             </h2>
             <div className="flex items-center gap-2">
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Responsável" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {profiles.map(p => (
+                    <SelectItem key={p.user_id} value={p.user_id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
