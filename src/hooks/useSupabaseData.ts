@@ -139,14 +139,9 @@ export function useObjectives(cycleId?: string) {
         .select(`
           *,
           sector:sectors(*),
-          owner:profiles!objectives_owner_id_fkey(*),
           key_results(
             *,
-            owner:profiles!key_results_owner_id_fkey(*),
-            tasks(
-              *,
-              assignee:profiles!tasks_assignee_id_fkey(*)
-            )
+            tasks(*)
           )
         `)
         .eq('is_archived', false)
