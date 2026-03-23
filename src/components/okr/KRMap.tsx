@@ -100,7 +100,7 @@ export function KRMap({ selectedKRId, onSelectKR, cycleFilter }: KRMapProps) {
       </div>
 
       {/* Tree View */}
-      <ScrollArea className="h-[280px] pr-3">
+      <ScrollArea className="h-[320px] pr-3">
         <Accordion type="multiple" defaultValue={defaultExpanded} className="space-y-1">
           {groupedBySector.map(([sectorId, { sectorName, sectorColor, objectives: sectorObjs }]) => (
             <AccordionItem key={sectorId} value={sectorId} className="border-0">
