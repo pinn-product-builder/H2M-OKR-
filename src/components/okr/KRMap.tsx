@@ -166,29 +166,29 @@ function OKRItem({ objective, selectedKRId, onSelectKR, searchTerm }: OKRItemPro
   const keyResults = objective.key_results || [];
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 min-w-0 overflow-hidden">
       {/* OKR Header */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/50 text-left transition-colors"
+        className="w-full flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/50 text-left transition-colors min-w-0"
       >
         <ChevronRight 
           className={cn(
-            "w-3.5 h-3.5 text-muted-foreground transition-transform",
+            "w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0",
             expanded && "rotate-90"
           )} 
         />
         <Target className="w-3.5 h-3.5 text-primary shrink-0" />
-        <span className="text-sm truncate flex-1">{objective.title}</span>
-        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
+        <span className="text-sm truncate flex-1 min-w-0">{objective.title}</span>
+        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0 whitespace-nowrap">
           {keyResults.length} KR{keyResults.length !== 1 ? 's' : ''}
         </Badge>
       </button>
 
       {/* Key Results */}
       {expanded && keyResults.length > 0 && (
-        <div className="ml-5 border-l border-border/50 pl-3 space-y-0.5">
+        <div className="ml-5 border-l border-border/50 pl-3 space-y-0.5 overflow-hidden">
           {keyResults.map(kr => {
             const progress = calculateKRProgress(kr);
             const status = kr.status || 'on-track';
@@ -201,7 +201,7 @@ function OKRItem({ objective, selectedKRId, onSelectKR, searchTerm }: OKRItemPro
                 type="button"
                 onClick={() => onSelectKR(kr.id, objective.id, kr.title, objective.title, progress, status)}
                 className={cn(
-                  "w-full flex items-center gap-2 py-1.5 px-2 rounded-md text-left transition-all",
+                  "w-full flex items-center gap-2 py-1.5 px-2 rounded-md text-left transition-all min-w-0",
                   isSelected 
                     ? "bg-accent/15 border border-accent/40" 
                     : "hover:bg-muted/50 border border-transparent"
@@ -212,7 +212,7 @@ function OKRItem({ objective, selectedKRId, onSelectKR, searchTerm }: OKRItemPro
                   isSelected ? "text-accent" : "text-muted-foreground"
                 )} />
                 <span className={cn(
-                  "text-sm truncate flex-1",
+                  "text-sm truncate flex-1 min-w-0",
                   isSelected && "font-medium"
                 )}>
                   {kr.title}
@@ -222,7 +222,7 @@ function OKRItem({ objective, selectedKRId, onSelectKR, searchTerm }: OKRItemPro
                 </span>
                 <Badge 
                   variant="outline" 
-                  className={cn("text-[9px] px-1 py-0 h-3.5 shrink-0", statusInfo.className)}
+                  className={cn("text-[9px] px-1 py-0 h-3.5 shrink-0 whitespace-nowrap", statusInfo.className)}
                 >
                   {statusInfo.label}
                 </Badge>
