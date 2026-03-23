@@ -116,50 +116,58 @@ export function Dashboard() {
 
   // Transform objectives to old format for OKRCard
   const transformedObjectives = useMemo(() => {
-    return filteredObjectives.slice(0, 4).map(obj => ({
-      id: obj.id,
-      title: obj.title,
-      description: obj.description || '',
-      sector: obj.sector_id || '',
-      owner: obj.owner?.name || '',
-      period: activeCycle?.name || '',
-      priority: (obj.priority as 'high' | 'medium' | 'low') || 'medium',
-      progress: calculateOKRProgressFromKRs(obj.key_results || []),
-      status: getStatusFromProgress(calculateOKRProgressFromKRs(obj.key_results || [])) as any,
-      createdAt: obj.created_at,
-      updatedAt: obj.updated_at,
-      keyResults: (obj.key_results || []).map(kr => {
-        const krProgress = calculateKRProgress(kr.current_value, kr.target_value, kr.type, kr.tasks);
-        return {
-          id: kr.id,
-          title: kr.title,
-          type: kr.type as any,
-          current: kr.current_value ?? 0,
-          target: kr.target_value ?? 0,
-          baseline: kr.baseline_value ?? 0,
-          unit: kr.unit || '',
-          owner: kr.owner?.name || '',
-          progress: krProgress,
-          status: getStatusFromProgress(krProgress) as any,
-          lastUpdate: kr.updated_at,
-          tasks: (kr.tasks || []).map(t => ({
-            id: t.id,
-            title: t.title,
-            description: t.description,
-            assignedTo: t.assignee_id || '',
-            assignedToName: t.assignee?.name || '',
-            dueDate: t.due_date,
-            priority: t.priority as any,
-            status: t.status as any,
-            createdAt: t.created_at,
-            completedAt: t.completed_at,
-            parentKRId: t.key_result_id,
-            parentOKRId: obj.id,
-          })),
-        };
-      }),
-    }));
-  }, [filteredObjectives, activeCycle]);
+    return filteredObjectives.slice(0, 4).map(obj => {
+      const ownerProfile = profiles.find(p => p.user_id === obj.owner_id);
+      return {
+        id: obj.id,
+        title: obj.title,
+        description: obj.description || '',
+        sector: obj.sector_id || '',
+        owner: ownerProfile?.name || '',
+        period: activeCycle?.name || '',
+        priority: (obj.priority as 'high' | 'medium' | 'low') || 'medium',
+        progress: calculateOKRProgressFromKRs(obj.key_results || []),
+        status: getStatusFromProgress(calculateOKRProgressFromKRs(obj.key_results || [])) as any,
+        createdAt: obj.created_at,
+        updatedAt: obj.updated_at,
+        okrType: obj.okr_type as 'strategic' | 'tactical' | 'operational' | undefined,
+        keyResults: (obj.key_results || []).map(kr => {
+          const krOwnerProfile = profiles.find(p => p.user_id === kr.owner_id);
+          const krProgress = calculateKRProgress(kr.current_value, kr.target_value, kr.type, kr.tasks);
+          return {
+            id: kr.id,
+            title: kr.title,
+            type: kr.type as any,
+            current: kr.current_value ?? 0,
+            target: kr.target_value ?? 0,
+            baseline: kr.baseline_value ?? 0,
+            unit: kr.unit || '',
+            owner: krOwnerProfile?.name || '',
+            progress: krProgress,
+            status: getStatusFromProgress(krProgress) as any,
+            lastUpdate: kr.updated_at,
+            tasks: (kr.tasks || []).map(t => {
+              const assigneeProfile = profiles.find(p => p.user_id === t.assignee_id);
+              return {
+                id: t.id,
+                title: t.title,
+                description: t.description,
+                assignedTo: t.assignee_id || '',
+                assignedToName: assigneeProfile?.name || '',
+                dueDate: t.due_date,
+                priority: t.priority as any,
+                status: t.status as any,
+                createdAt: t.created_at,
+                completedAt: t.completed_at,
+                parentKRId: t.key_result_id,
+                parentOKRId: obj.id,
+              };
+            }),
+          };
+        }),
+      };
+    });
+  }, [filteredObjectives, activeCycle, profiles]);
 
   const isLoading = objectivesLoading || sectorsLoading;
 
