@@ -233,6 +233,17 @@ export function OKRDetailModal({ objective, open, onOpenChange, rawObjective }: 
                 <h4 className="text-sm font-medium text-muted-foreground">
                   Todas as Tarefas deste OKR
                 </h4>
+                {objective.keyResults.length > 0 && (
+                  <TaskForm
+                    onTaskCreated={handleAddTask}
+                    trigger={
+                      <Button variant="outline" size="sm" className="gap-1 text-xs">
+                        <Plus className="w-3 h-3" />
+                        Nova Tarefa
+                      </Button>
+                    }
+                  />
+                )}
               </div>
               <TaskList 
                 tasks={getAllTasks()} 
