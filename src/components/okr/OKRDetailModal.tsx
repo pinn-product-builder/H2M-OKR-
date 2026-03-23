@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Calendar, Target, ChevronDown, ChevronRight, Archive, ListTodo, Trash2, Loader2, Pencil } from 'lucide-react';
+import { User, Calendar, Target, ChevronDown, ChevronRight, Archive, ListTodo, Trash2, Loader2, Pencil, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -233,6 +233,17 @@ export function OKRDetailModal({ objective, open, onOpenChange, rawObjective }: 
                 <h4 className="text-sm font-medium text-muted-foreground">
                   Todas as Tarefas deste OKR
                 </h4>
+                {objective.keyResults.length > 0 && (
+                  <TaskForm
+                    onTaskCreated={handleAddTask}
+                    trigger={
+                      <Button variant="outline" size="sm" className="gap-1 text-xs">
+                        <Plus className="w-3 h-3" />
+                        Nova Tarefa
+                      </Button>
+                    }
+                  />
+                )}
               </div>
               <TaskList 
                 tasks={getAllTasks()} 
