@@ -159,7 +159,7 @@ export function TaskForm({ krId, okrId, onTaskCreated, trigger }: TaskFormProps)
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className={cn("max-w-md overflow-hidden", needsKRSelection && "max-w-2xl")}>
+      <DialogContent className={cn("max-w-md overflow-hidden", needsKRSelection && "w-[95vw] max-w-5xl")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ListTodo className="w-5 h-5 text-accent" />
