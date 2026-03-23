@@ -87,7 +87,7 @@ export function KRMap({ selectedKRId, onSelectKR, cycleFilter }: KRMapProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-hidden">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -100,44 +100,46 @@ export function KRMap({ selectedKRId, onSelectKR, cycleFilter }: KRMapProps) {
       </div>
 
       {/* Tree View */}
-      <ScrollArea className="h-[320px] pr-3">
-        <Accordion type="multiple" defaultValue={defaultExpanded} className="space-y-1">
-          {groupedBySector.map(([sectorId, { sectorName, sectorColor, objectives: sectorObjs }]) => (
-            <AccordionItem key={sectorId} value={sectorId} className="border-0">
-              <AccordionTrigger className="py-2 px-2 hover:no-underline hover:bg-muted/50 rounded-md text-sm font-medium">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-2 h-2 rounded-full" 
-                    style={{ backgroundColor: sectorColor }}
-                  />
-                  <span>{sectorName}</span>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                    {sectorObjs.length}
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-0 pt-1">
-                <div className="ml-3 border-l border-border pl-3 space-y-1">
-                  {sectorObjs.map(obj => (
-                    <OKRItem
-                      key={obj.id}
-                      objective={obj}
-                      selectedKRId={selectedKRId}
-                      onSelectKR={onSelectKR}
-                      searchTerm={searchTerm}
+      <ScrollArea className="h-[320px]">
+        <div className="pr-3">
+          <Accordion type="multiple" defaultValue={defaultExpanded} className="space-y-1">
+            {groupedBySector.map(([sectorId, { sectorName, sectorColor, objectives: sectorObjs }]) => (
+              <AccordionItem key={sectorId} value={sectorId} className="border-0">
+                <AccordionTrigger className="py-2 px-2 hover:no-underline hover:bg-muted/50 rounded-md text-sm font-medium">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div 
+                      className="w-2 h-2 rounded-full shrink-0" 
+                      style={{ backgroundColor: sectorColor }}
                     />
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+                    <span className="truncate">{sectorName}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                      {sectorObjs.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-0 pt-1">
+                  <div className="ml-3 border-l border-border pl-3 space-y-1 overflow-hidden">
+                    {sectorObjs.map(obj => (
+                      <OKRItem
+                        key={obj.id}
+                        objective={obj}
+                        selectedKRId={selectedKRId}
+                        onSelectKR={onSelectKR}
+                        searchTerm={searchTerm}
+                      />
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
 
-        {groupedBySector.length === 0 && searchTerm && (
-          <div className="text-center py-6 text-muted-foreground">
-            <p className="text-sm">Nenhum resultado para "{searchTerm}"</p>
-          </div>
-        )}
+          {groupedBySector.length === 0 && searchTerm && (
+            <div className="text-center py-6 text-muted-foreground">
+              <p className="text-sm">Nenhum resultado para "{searchTerm}"</p>
+            </div>
+          )}
+        </div>
       </ScrollArea>
     </div>
   );
