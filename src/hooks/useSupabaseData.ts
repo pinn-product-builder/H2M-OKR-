@@ -350,6 +350,32 @@ export function useCreateKeyResult() {
   });
 }
 
+// Helper: recalculate and persist objective progress/status from its KRs and tasks
+async function syncObjectiveProgress(objectiveId: string) {
+  const { data: krs } = await supabase
+    .from('key_results')
+    .select('*, tasks(*)')
+    .eq('objective_id', objectiveId);
+
+  if (!krs) return;
+
+  const progress = calculateOKRProgressFromKRs(
+    krs.map(kr => ({
+      current_value: kr.current_value,
+      target_value: kr.target_value,
+      type: kr.type ?? undefined,
+      weight: kr.weight,
+      tasks: (kr.tasks || []).map((t: any) => ({ status: t.status })),
+    }))
+  );
+  const status = getStatusFromProgress(progress);
+
+  await supabase
+    .from('objectives')
+    .update({ progress, status, updated_at: new Date().toISOString() })
+    .eq('id', objectiveId);
+}
+
 // Update key result
 export function useUpdateKeyResult() {
   const queryClient = useQueryClient();
@@ -364,6 +390,12 @@ export function useUpdateKeyResult() {
         .single();
       
       if (error) throw error;
+
+      // Sync parent objective progress
+      if (data?.objective_id) {
+        await syncObjectiveProgress(data.objective_id);
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -385,6 +417,17 @@ export function useCreateTask() {
         .single();
       
       if (error) throw error;
+
+      // Find objective and sync progress
+      const { data: kr } = await supabase
+        .from('key_results')
+        .select('objective_id')
+        .eq('id', task.key_result_id)
+        .single();
+      if (kr?.objective_id) {
+        await syncObjectiveProgress(kr.objective_id);
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -407,6 +450,19 @@ export function useUpdateTask() {
         .single();
       
       if (error) throw error;
+
+      // Find objective and sync progress
+      if (data?.key_result_id) {
+        const { data: kr } = await supabase
+          .from('key_results')
+          .select('objective_id')
+          .eq('id', data.key_result_id)
+          .single();
+        if (kr?.objective_id) {
+          await syncObjectiveProgress(kr.objective_id);
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -420,13 +476,25 @@ export function useDeleteTask() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, keyResultId }: { id: string; keyResultId?: string }) => {
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', id);
       
       if (error) throw error;
+
+      // Sync objective progress
+      if (keyResultId) {
+        const { data: kr } = await supabase
+          .from('key_results')
+          .select('objective_id')
+          .eq('id', keyResultId)
+          .single();
+        if (kr?.objective_id) {
+          await syncObjectiveProgress(kr.objective_id);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['objectives'] });
