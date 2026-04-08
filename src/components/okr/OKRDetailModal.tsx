@@ -5,7 +5,8 @@ import { TaskForm } from './TaskForm';
 import { EditOKRForm } from './EditOKRForm';
 import { ProgressBar } from '@/components/dashboard/ProgressBar';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
-import { useSectors, useCreateTask, useUpdateTask, useUpdateObjective, useDeleteObjective } from '@/hooks/useSupabaseData';
+import { Input } from '@/components/ui/input';
+import { useSectors, useCreateTask, useUpdateTask, useUpdateObjective, useDeleteObjective, useUpdateKeyResult } from '@/hooks/useSupabaseData';
 import {
   Dialog,
   DialogContent,
