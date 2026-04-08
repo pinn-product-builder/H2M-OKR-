@@ -342,6 +342,10 @@ export function useCreateKeyResult() {
         .single();
       
       if (error) throw error;
+
+      // Sync parent objective progress
+      await syncObjectiveProgress(keyResult.objective_id);
+
       return data;
     },
     onSuccess: () => {
