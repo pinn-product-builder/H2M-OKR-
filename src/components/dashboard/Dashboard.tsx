@@ -40,9 +40,17 @@ export function Dashboard() {
   }, [objectives, ownerFilter]);
 
   // Calculate metrics from real data
+  const objectivesWithCalculatedStatus = useMemo(() => {
+    return filteredObjectives.map(o => {
+      const progress = calculateOKRProgressFromKRs(o.key_results || []);
+      const status = getStatusFromProgress(progress);
+      return { ...o, _progress: progress, _status: status };
+    });
+  }, [filteredObjectives]);
+
   const metrics: MetricCardType[] = useMemo(() => {
-    const onTrackOkrs = filteredObjectives.filter(o => o.status === 'on-track').length;
-    const attentionOkrs = filteredObjectives.filter(o => o.status === 'attention' || o.status === 'critical').length;
+    const onTrackOkrs = objectivesWithCalculatedStatus.filter(o => o._status === 'on-track' || o._status === 'completed').length;
+    const attentionOkrs = objectivesWithCalculatedStatus.filter(o => o._status === 'attention' || o._status === 'critical').length;
     
     // Count all tasks from key results
     const allTasks = filteredObjectives.flatMap(o => 
@@ -56,8 +64,8 @@ export function Dashboard() {
         id: '1',
         title: 'OKRs no Prazo',
         value: String(onTrackOkrs),
-        change: filteredObjectives.length > 0 ? Math.round((onTrackOkrs / filteredObjectives.length) * 100) : 0,
-        changeLabel: `de ${filteredObjectives.length} OKRs ativos`,
+        change: objectivesWithCalculatedStatus.length > 0 ? Math.round((onTrackOkrs / objectivesWithCalculatedStatus.length) * 100) : 0,
+        changeLabel: `de ${objectivesWithCalculatedStatus.length} OKRs ativos`,
         icon: 'target',
         variant: 'success' as const,
       },
@@ -65,7 +73,7 @@ export function Dashboard() {
         id: '2',
         title: 'OKRs em Atraso',
         value: String(attentionOkrs),
-        change: filteredObjectives.length > 0 ? -Math.round((attentionOkrs / filteredObjectives.length) * 100) : 0,
+        change: objectivesWithCalculatedStatus.length > 0 ? -Math.round((attentionOkrs / objectivesWithCalculatedStatus.length) * 100) : 0,
         changeLabel: 'precisam atenção',
         icon: 'alert-triangle',
         variant: 'warning' as const,
@@ -89,7 +97,7 @@ export function Dashboard() {
         variant: 'critical' as const,
       },
     ];
-  }, [filteredObjectives]);
+  }, [objectivesWithCalculatedStatus, filteredObjectives]);
 
   // Calculate sector summary from real data
   const sectorSummary: SectorSummary[] = useMemo(() => {
