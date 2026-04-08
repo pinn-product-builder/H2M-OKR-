@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Objective, KeyResult, Task } from '@/types/okr';
 import { TaskList } from './TaskList';
 import { TaskForm } from './TaskForm';
