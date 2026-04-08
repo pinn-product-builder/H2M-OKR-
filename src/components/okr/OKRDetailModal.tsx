@@ -317,6 +317,42 @@ interface KRItemProps {
 }
 
 function KRItem({ kr, okrId, isExpanded, onToggle, tasks, onAddTask, onToggleTaskStatus }: KRItemProps) {
+  const [isEditingValue, setIsEditingValue] = useState(false);
+  const [editValue, setEditValue] = useState<string>(String(kr.current ?? 0));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const updateKR = useUpdateKeyResult();
+
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(String(kr.current ?? 0));
+    setIsEditingValue(true);
+    setTimeout(() => inputRef.current?.select(), 50);
+  };
+
+  const handleSave = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const newValue = Number(editValue);
+    if (!isNaN(newValue)) {
+      await updateKR.mutateAsync({ id: kr.id, current_value: newValue });
+    }
+    setIsEditingValue(false);
+  };
+
+  const handleCancel = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsEditingValue(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSave();
+    if (e.key === 'Escape') handleCancel();
+  };
+
+  const formatValue = (value: number, unit: string, type: string) => {
+    if (type === 'numeric' && unit === 'R$') return `R$ ${(value / 1000000).toFixed(1)}M`;
+    return `${value} ${unit}`;
+  };
+
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       <div
@@ -351,15 +387,41 @@ function KRItem({ kr, okrId, isExpanded, onToggle, tasks, onAddTask, onToggleTas
                 <User className="w-3.5 h-3.5" />
                 <span>{kr.owner}</span>
               </div>
+
+              {/* Inline editable current value */}
+              {isEditingValue ? (
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <span className="text-xs">Atual:</span>
+                  <Input
+                    ref={inputRef}
+                    type="number"
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="h-7 w-24 text-sm"
+                    autoFocus
+                  />
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave} disabled={updateKR.isPending}>
+                    {updateKR.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 text-success" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancel}>
+                    <X className="w-3 h-3 text-destructive" />
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  className="flex items-center gap-1 hover:text-foreground hover:bg-muted/50 px-1.5 py-0.5 rounded transition-colors"
+                  onClick={handleStartEdit}
+                  title="Clique para atualizar o valor atual"
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>Atual: {formatValue(kr.current, kr.unit, kr.type)}</span>
+                  <Pencil className="w-3 h-3 opacity-50" />
+                </button>
+              )}
+
               <span>
-                Atual: {kr.type === 'numeric' && kr.unit === 'R$' 
-                  ? `R$ ${(kr.current / 1000000).toFixed(1)}M` 
-                  : `${kr.current} ${kr.unit}`}
-              </span>
-              <span>
-                Meta: {kr.type === 'numeric' && kr.unit === 'R$' 
-                  ? `R$ ${(kr.target / 1000000).toFixed(1)}M` 
-                  : `${kr.target} ${kr.unit}`}
+                Meta: {formatValue(kr.target, kr.unit, kr.type)}
               </span>
             </div>
 
